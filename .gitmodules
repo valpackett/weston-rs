@@ -1,0 +1,3 @@
+[submodule "libweston-sys/weston"]
+	path = libweston-sys/weston
+	url = https://github.com/valpackett/weston

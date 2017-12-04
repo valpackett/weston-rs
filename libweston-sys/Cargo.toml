@@ -1,0 +1,22 @@
+[package]
+name = "libweston-sys"
+version = "0.0.0"
+authors = [ "Val Packett <val@packett.cool>" ]
+keywords = [ "Weston", "Wayland", "Compositor" ]
+categories = ["external-ffi-bindings"]
+description = "Bindings to libweston (with libweston-desktop), the reference Wayland compositor library"
+license = "MIT"
+homepage = "https://github.com/valpackett/weston-rs"
+repository = "https://github.com/valpackett/weston-rs"
+build = "build.rs"
+
+[dependencies]
+libc = "0.2"
+wayland-sys = { version = "0", features = ["client", "cursor", "egl", "server"] }
+
+[build-dependencies]
+cc = { version = "1.0", features = ["parallel"] }
+pkg-config = "0.3"
+regex = "0.2"
+lazy_static = "1.0"
+bindgen = "0.31"

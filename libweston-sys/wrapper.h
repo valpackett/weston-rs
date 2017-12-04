@@ -1,0 +1,12 @@
+#define REQUIRE_LIBWESTON_API_VERSION 0x3000
+#include "weston/libweston/compositor.h"
+#include "weston/libweston/compositor-drm.h"
+#include "weston/libweston/compositor-wayland.h"
+#include "weston/libweston/compositor-headless.h"
+#include "weston/libweston/gl-renderer.h"
+#include "weston/libweston/launcher-impl.h"
+#include "weston/libweston/pixel-formats.h"
+#include "weston/libweston/pixman-renderer.h"
+#include "weston/libweston/timeline-object.h"
+#include "weston/libweston/windowed-output-api.h"
+#include "weston/libweston-desktop/libweston-desktop.h"
