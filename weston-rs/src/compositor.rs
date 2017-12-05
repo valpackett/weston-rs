@@ -1,8 +1,8 @@
 use std::ptr;
 use libc;
 use libweston_sys::{
-    weston_compositor,
-    weston_compositor_create, weston_compositor_destroy, weston_compositor_shutdown,
+    weston_compositor, weston_compositor_create, weston_compositor_destroy,
+    weston_compositor_shutdown,
     weston_compositor_set_xkb_rule_names, xkb_rule_names,
     weston_compositor_wake, weston_compositor_schedule_repaint,
     weston_pending_output_coldplug

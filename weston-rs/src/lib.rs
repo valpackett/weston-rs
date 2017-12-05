@@ -20,6 +20,9 @@ pub mod compositor;
 pub mod backend;
 pub mod output_api;
 pub mod output;
+pub mod layer;
+pub mod surface;
+pub mod view;
 
 pub use memoffset::*;
 pub use display::Display;
@@ -27,6 +30,9 @@ pub use compositor::Compositor;
 pub use backend::{Backend, WaylandBackend};
 pub use output_api::WindowedOutput;
 pub use output::Output;
+pub use layer::{Layer, LayerPosition};
+pub use surface::Surface;
+pub use view::View;
 
 #[macro_export]
 macro_rules! wl_container_of {
