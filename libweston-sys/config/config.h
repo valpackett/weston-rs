@@ -19,6 +19,10 @@
 #define HAVE_GBM_FD_IMPORT 1
 
 #define LIBWESTON_MODULEDIR ""
+#define DATADIR ""
+
+#define LIBWESTON_STATIC_BACKENDS 1
+#define LIBWESTON_STATIC_GL_RENDERER 1
 
 #ifndef __linux__
 #include <stdlib.h>

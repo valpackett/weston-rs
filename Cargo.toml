@@ -1,2 +1,2 @@
 [workspace]
-members = ["libweston-sys"]
+members = ["libweston-sys", "weston-rs"]
