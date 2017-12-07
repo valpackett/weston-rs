@@ -35,9 +35,9 @@ impl WaylandBackend {
                 compositor.ptr(),
                 &mut conf.base as *mut _) };
         WaylandBackend {
-            id: id,
-            // cursor_theme: cursor_theme,
-            // conf: conf,
+            id,
+            // cursor_theme,
+            // conf,
         }
     }
 }

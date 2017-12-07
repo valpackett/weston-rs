@@ -15,7 +15,7 @@ pub struct Output {
 impl From<*mut weston_output> for Output {
     fn from(ptr: *mut weston_output) -> Output {
         Output {
-            ptr: ptr,
+            ptr,
         }
     }
 }

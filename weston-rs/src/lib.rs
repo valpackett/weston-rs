@@ -1,6 +1,6 @@
 pub extern crate libweston_sys;
-extern crate wayland_sys;
-extern crate libc;
+pub extern crate wayland_sys;
+pub extern crate libc;
 pub extern crate vsprintf;
 #[macro_use]
 extern crate const_cstr;
@@ -23,6 +23,7 @@ pub mod output;
 pub mod layer;
 pub mod surface;
 pub mod view;
+pub mod desktop;
 
 pub use memoffset::*;
 pub use display::Display;
@@ -33,6 +34,7 @@ pub use output::Output;
 pub use layer::{Layer, LayerPosition};
 pub use surface::Surface;
 pub use view::View;
+pub use desktop::{Desktop, DesktopSurface};
 
 #[macro_export]
 macro_rules! wl_container_of {
@@ -42,11 +44,11 @@ macro_rules! wl_container_of {
 }
 
 #[macro_export]
-macro_rules! signal_listener {
-    (unsafe fn $name:ident ($ctxarg:ident : &mut $ctxtyp:tt | $field:ident, $datarg:ident : &mut $dattyp:tt) $b:block) => {
+macro_rules! weston_callback {
+    (wl unsafe fn $name:ident ($ctxarg:tt : &mut $ctxtyp:tt | $field:ident, $datarg:tt : &mut $dattyp:ty) $b:block) => {
         #[allow(unused_unsafe)]
-        unsafe extern "C" fn $name(listener: *mut wl_listener, data: *mut ::std::os::raw::c_void) {
-            let mut __data = $dattyp::from(data);
+        unsafe extern "C" fn $name(listener: *mut ::wayland_sys::server::wl_listener, data: *mut ::std::os::raw::c_void) {
+            let mut __data: $dattyp = data.into();
             {
                 let $ctxarg = &mut *wl_container_of!(listener, $ctxtyp, $field);
                 let $datarg = &mut __data;
@@ -54,8 +56,18 @@ macro_rules! signal_listener {
             }
             ::std::mem::forget(__data);
         }
-    }
+    };
+    (api ($westontyp:ident) unsafe fn $name:ident ($objarg:tt : $objtyp:ty, $datarg:tt : &mut $dattyp:ty) $b:block) => {
+        #[allow(unused_unsafe)]
+        unsafe extern "C" fn $name(obj: *mut ::libweston_sys::$westontyp, user_data: *mut ::libc::c_void) {
+            let mut $objarg: $objtyp = obj.into();
+            let $datarg = &mut *(user_data as *mut $dattyp);
+            $b;
+            ::std::mem::forget($objarg);
+        }
+    };
 }
+
 
 #[macro_export]
 macro_rules! weston_logger {

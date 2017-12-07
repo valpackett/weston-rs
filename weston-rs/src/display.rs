@@ -1,3 +1,4 @@
+use std::ffi;
 use wayland_sys::server::*;
 
 pub struct Display {
@@ -9,6 +10,10 @@ impl Display {
         Display {
             ptr: unsafe { wl_display_create() },
         }
+    }
+
+    pub fn add_socket_auto(&self) -> ffi::CString {
+        unsafe { ffi::CStr::from_ptr(wl_display_add_socket_auto(self.ptr)).to_owned() }
     }
 
     pub fn run(&self) {

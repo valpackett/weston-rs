@@ -28,15 +28,15 @@ impl Compositor {
         unsafe { weston_compositor_set_xkb_rule_names(self.ptr, names.unwrap_or(ptr::null_mut())); }
     }
 
-    pub fn schedule_repaint(&mut self) {
+    pub fn schedule_repaint(&self) {
         unsafe { weston_compositor_schedule_repaint(self.ptr); }
     }
 
-    pub fn pending_output_coldplug(&mut self) {
+    pub fn pending_output_coldplug(&self) {
         unsafe { weston_pending_output_coldplug(self.ptr); }
     }
 
-    pub fn wake(&mut self) {
+    pub fn wake(&self) {
         unsafe { weston_compositor_wake(self.ptr); }
     }
 

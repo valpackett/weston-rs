@@ -163,9 +163,11 @@ fn main() {
 
     bindgen::Builder::default()
         .header("wrapper.h")
+        .blacklist_type("timespec")
         .blacklist_type(r"^wl_.*$")
         .whitelist_type(r"^weston_.*$")
         .whitelist_function(r"^weston_.*$")
+        .opaque_type("__va_list_tag")
         .ctypes_prefix("libc")
         .clang_args(&["-Iconfig", "-Iprotos", "-Iweston/shared", "-Iweston/libweston", "-Iweston"])
         .clang_args(&[libdrm, libudev, gbm, libinput, pixman, xkbcommon, wayland_server, wayland_client, wayland_cursor, wayland_egl]

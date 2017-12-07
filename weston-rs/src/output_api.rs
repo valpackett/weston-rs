@@ -23,7 +23,7 @@ impl WindowedOutput {
                 mem::size_of::<weston_windowed_output_api>())
         } as *mut weston_windowed_output_api;
         WindowedOutput {
-            ptr: ptr
+            ptr,
         }
     }
 

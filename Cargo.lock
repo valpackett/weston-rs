@@ -1,15 +1,3 @@
-[root]
-name = "weston-rs"
-version = "0.0.0"
-dependencies = [
- "const-cstr 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
- "libweston-sys 0.0.0",
- "memoffset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "vsprintf 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "wayland-sys 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
 [[package]]
 name = "aho-corasick"
 version = "0.6.4"
@@ -421,6 +409,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "dlib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "weston-rs"
+version = "0.0.0"
+dependencies = [
+ "const-cstr 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libweston-sys 0.0.0",
+ "memoffset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "vsprintf 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wayland-sys 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
