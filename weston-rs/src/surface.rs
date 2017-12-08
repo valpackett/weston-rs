@@ -2,7 +2,7 @@ use libweston_sys::{
     weston_surface, weston_surface_create, weston_surface_destroy,
     weston_surface_set_size, weston_surface_set_color, weston_surface_damage
 };
-use super::compositor::Compositor;
+use ::compositor::Compositor;
 
 pub struct Surface {
     ptr: *mut weston_surface,

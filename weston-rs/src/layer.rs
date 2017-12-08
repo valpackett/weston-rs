@@ -14,8 +14,8 @@ use libweston_sys::{
     weston_layer_position_WESTON_LAYER_POSITION_FADE,
     weston_layer_entry_insert
 };
-use super::compositor::Compositor;
-use super::view::View;
+use ::compositor::Compositor;
+use ::view::View;
 
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq)]

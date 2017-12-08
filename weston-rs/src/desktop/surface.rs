@@ -1,36 +1,13 @@
 use libc;
-use std::{mem, ptr, marker};
+use std::{ptr, mem, marker};
 use libweston_sys::{
-    weston_desktop, weston_desktop_create, weston_desktop_destroy,
-    weston_desktop_api,
-    weston_desktop_client, weston_desktop_surface,
+    weston_desktop_surface,
     weston_desktop_surface_get_user_data, weston_desktop_surface_set_user_data,
     weston_desktop_surface_get_surface,
     weston_desktop_surface_create_view, weston_desktop_surface_unlink_view
 };
-use super::compositor::Compositor;
-use super::surface::Surface;
-use super::view::View;
-
-
-pub struct DesktopClient {
-    ptr: *mut weston_desktop_client,
-}
-
-impl From<*mut weston_desktop_client> for DesktopClient {
-    fn from(ptr: *mut weston_desktop_client) -> DesktopClient {
-        DesktopClient {
-            ptr: ptr,
-        }
-    }
-}
-
-impl DesktopClient {
-    pub fn ptr(&self) -> *mut weston_desktop_client {
-        self.ptr
-    }
-}
-
+use ::surface::Surface;
+use ::view::View;
 
 pub struct DesktopSurface<T> {
     ptr: *mut weston_desktop_surface,
@@ -76,30 +53,5 @@ impl<T> DesktopSurface<T> {
 
     pub fn unlink_view(&self, view: &mut View) {
         unsafe { weston_desktop_surface_unlink_view(view.ptr()); }
-    }
-}
-
-
-pub struct Desktop<'comp, UD: 'comp> {
-    ptr: *mut weston_desktop,
-    phantom: marker::PhantomData<(&'comp Compositor, &'comp UD)>,
-}
-
-impl<'comp, UD> Desktop<'comp, UD> {
-    pub fn new(compositor: &'comp Compositor, api: &'comp weston_desktop_api, user_data: &'comp UD) -> Desktop<'comp, UD> {
-        Desktop {
-            ptr: unsafe { weston_desktop_create(compositor.ptr(), api, user_data as *const UD as *mut _) },
-            phantom: marker::PhantomData,
-        }
-    }
-
-    pub fn ptr(&self) -> *mut weston_desktop {
-        self.ptr
-    }
-}
-
-impl<'comp, UD> Drop for Desktop<'comp, UD> {
-    fn drop(&mut self) {
-        unsafe { weston_desktop_destroy(self.ptr); }
     }
 }

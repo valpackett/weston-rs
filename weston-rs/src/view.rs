@@ -3,7 +3,7 @@ use libweston_sys::{
     weston_view_set_position,
     weston_layer_entry
 };
-use super::surface::Surface;
+use ::surface::Surface;
 
 pub struct View {
     ptr: *mut weston_view,

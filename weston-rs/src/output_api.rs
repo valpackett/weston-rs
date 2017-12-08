@@ -3,8 +3,8 @@ use libweston_sys::{
     weston_plugin_api_get,
     weston_windowed_output_api,
 };
-use super::compositor::Compositor;
-use super::output::Output;
+use ::compositor::Compositor;
+use ::output::Output;
 
 const_cstr!{
     WINDOWED_OUTPUT_API_NAME = "weston_windowed_output_api_v1";

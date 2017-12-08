@@ -4,7 +4,7 @@ use libweston_sys::{
     weston_backend_config,
     weston_wayland_backend_init, weston_wayland_backend_config
 };
-use super::compositor::Compositor;
+use ::compositor::Compositor;
 
 pub trait Backend {
     fn id(&self) -> libc::c_int;

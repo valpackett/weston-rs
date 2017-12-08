@@ -8,7 +8,7 @@ use libweston_sys::{
     weston_pending_output_coldplug
 };
 use wayland_sys::server::wl_signal;
-use super::display::Display;
+use ::display::Display;
 
 pub struct Compositor {
     ptr: *mut weston_compositor,
