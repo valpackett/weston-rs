@@ -37,7 +37,6 @@ impl View {
 
 impl Drop for View {
     fn drop(&mut self) {
-        eprintln!("ViewDrop");
         unsafe { weston_view_destroy(self.ptr); }
     }
 }

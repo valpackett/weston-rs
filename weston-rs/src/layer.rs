@@ -1,4 +1,4 @@
-use std::mem;
+use std::{mem, marker};
 use libweston_sys::{
     weston_layer, weston_layer_init,
     weston_layer_position, weston_layer_set_position,
@@ -32,14 +32,16 @@ pub enum LayerPosition {
     Fade = weston_layer_position_WESTON_LAYER_POSITION_FADE,
 }
 
-pub struct Layer {
+pub struct Layer<'comp> {
     layer: weston_layer,
+    phantom: marker::PhantomData<&'comp Compositor>,
 }
 
-impl Layer {
-    pub fn new(compositor: &Compositor) -> Box<Layer> {
+impl<'comp> Layer<'comp> {
+    pub fn new(compositor: &'comp Compositor) -> Box<Layer<'comp>> {
         let mut result = Box::new(Layer {
             layer: unsafe { mem::zeroed() },
+            phantom: marker::PhantomData,
         });
         unsafe { weston_layer_init(&mut result.layer, compositor.ptr()); }
         result

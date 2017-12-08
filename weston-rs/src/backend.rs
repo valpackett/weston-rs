@@ -1,4 +1,4 @@
-use std::{mem, ptr, ffi};
+use std::{mem, ptr, ffi, marker};
 use libc;
 use libweston_sys::{
     weston_backend_config,
@@ -10,13 +10,14 @@ pub trait Backend {
     fn id(&self) -> libc::c_int;
 }
 
-pub struct WaylandBackend {
+pub struct WaylandBackend<'comp> {
     id: libc::c_int,
     // cursor_theme: ffi::CString,
     // conf: weston_wayland_backend_config,
+    phantom: marker::PhantomData<&'comp Compositor>,
 }
 
-impl WaylandBackend {
+impl<'comp> WaylandBackend<'comp> {
     pub fn new(compositor: &Compositor) -> WaylandBackend {
         let cursor_theme = ffi::CString::new("Adwaita").unwrap();
         let mut conf = weston_wayland_backend_config {
@@ -38,11 +39,12 @@ impl WaylandBackend {
             id,
             // cursor_theme,
             // conf,
+            phantom: marker::PhantomData,
         }
     }
 }
 
-impl Backend for WaylandBackend {
+impl<'comp> Backend for WaylandBackend<'comp> {
     fn id(&self) -> libc::c_int {
         self.id
     }

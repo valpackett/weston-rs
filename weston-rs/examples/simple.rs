@@ -21,11 +21,12 @@ weston_logger!{fn wlog_continue(msg: &str) {
     eprint!("{}", msg);
 }}
 
-struct Context {
-    compositor: Compositor,
-    output: WindowedOutput,
+struct Context<'a> {
+    compositor: *mut Compositor,
+    backend: WaylandBackend<'a>,
+    output: WindowedOutput<'a>,
     output_pending_listener: wl_listener,
-    windows_layer: Box<Layer>,
+    windows_layer: Box<Layer<'a>>,
 }
 
 struct SurfaceContext {
@@ -46,7 +47,7 @@ weston_callback!{api(weston_desktop_surface) unsafe fn surface_added(
     ctx.windows_layer.entry_insert(&mut view);
     view.set_position(0.0, -1.0);
     dsurf.get_surface().damage();
-    ctx.compositor.schedule_repaint();
+    (*ctx.compositor).schedule_repaint();
     let mut sctx = mem::ManuallyDrop::new(SurfaceContext {
         view: Some(view),
     });
@@ -67,6 +68,7 @@ fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
     let display = Display::new();
     let mut compositor = Compositor::new(&display);
+    let compositor_ptr = { &mut compositor as *mut _ };
     compositor.set_xkb_rule_names(None);
     let backend = WaylandBackend::new(&compositor);
     let output = WindowedOutput::new(&compositor);
@@ -93,10 +95,10 @@ fn main() {
     windows_layer.set_position(LayerPosition::Normal);
 
     let ctx = Context {
-       compositor, output, output_pending_listener, windows_layer
+       compositor: compositor_ptr, backend, output, output_pending_listener, windows_layer
     };
 
-    let desktop = Desktop::new(&ctx.compositor, &desktop_api, &ctx);
+    let desktop = Desktop::new(unsafe { &*ctx.compositor }, &desktop_api, &ctx);
 
     let sock_name = display.add_socket_auto();
     env::remove_var("DISPLAY");
@@ -105,6 +107,6 @@ fn main() {
 
     let _ = process::Command::new("gtk3-demo").spawn().expect("spawn");
 
-    ctx.compositor.wake();
+    unsafe { (*ctx.compositor).wake(); }
     display.run();
 }

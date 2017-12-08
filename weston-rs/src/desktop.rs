@@ -1,6 +1,5 @@
 use libc;
-use std::{mem, ptr};
-use std::marker::PhantomData;
+use std::{mem, ptr, marker};
 use libweston_sys::{
     weston_desktop, weston_desktop_create, weston_desktop_destroy,
     weston_desktop_api,
@@ -35,14 +34,14 @@ impl DesktopClient {
 
 pub struct DesktopSurface<T> {
     ptr: *mut weston_desktop_surface,
-    phantom: PhantomData<T>,
+    phantom: marker::PhantomData<T>,
 }
 
 impl<T> From<*mut weston_desktop_surface> for DesktopSurface<T> {
     fn from(ptr: *mut weston_desktop_surface) -> DesktopSurface<T> {
         DesktopSurface {
             ptr: ptr,
-            phantom: PhantomData::<T>,
+            phantom: marker::PhantomData::<T>,
         }
     }
 }
@@ -81,16 +80,16 @@ impl<T> DesktopSurface<T> {
 }
 
 
-pub struct Desktop<'a, UD: 'a> {
+pub struct Desktop<'comp, UD: 'comp> {
     ptr: *mut weston_desktop,
-    phantom: PhantomData<&'a UD>,
+    phantom: marker::PhantomData<(&'comp Compositor, &'comp UD)>,
 }
 
-impl<'a, UD> Desktop<'a, UD> {
-    pub fn new(compositor: &Compositor, api: &'a weston_desktop_api, user_data: &'a UD) -> Desktop<'a, UD> {
+impl<'comp, UD> Desktop<'comp, UD> {
+    pub fn new(compositor: &'comp Compositor, api: &'comp weston_desktop_api, user_data: &'comp UD) -> Desktop<'comp, UD> {
         Desktop {
             ptr: unsafe { weston_desktop_create(compositor.ptr(), api, user_data as *const UD as *mut _) },
-            phantom: PhantomData::<&'a UD>,
+            phantom: marker::PhantomData,
         }
     }
 
@@ -99,7 +98,7 @@ impl<'a, UD> Desktop<'a, UD> {
     }
 }
 
-impl<'a, UD> Drop for Desktop<'a, UD> {
+impl<'comp, UD> Drop for Desktop<'comp, UD> {
     fn drop(&mut self) {
         unsafe { weston_desktop_destroy(self.ptr); }
     }
