@@ -26,15 +26,15 @@ pub mod view;
 pub mod desktop;
 
 pub use memoffset::*;
-pub use display::Display;
-pub use compositor::Compositor;
-pub use backend::{Backend, WaylandBackend};
-pub use output_api::WindowedOutput;
-pub use output::Output;
-pub use layer::{Layer, LayerPosition};
-pub use surface::Surface;
-pub use view::View;
-pub use desktop::{Desktop, DesktopSurface};
+pub use display::*;
+pub use compositor::*;
+pub use backend::*;
+pub use output_api::*;
+pub use output::*;
+pub use layer::*;
+pub use surface::*;
+pub use view::*;
+pub use desktop::*;
 
 #[macro_export]
 macro_rules! wl_container_of {
@@ -55,15 +55,6 @@ macro_rules! weston_callback {
                 $b;
             }
             ::std::mem::forget(__data);
-        }
-    };
-    (api ($westontyp:ident) unsafe fn $name:ident ($objarg:tt : $objtyp:ty, $datarg:tt : &mut $dattyp:ty) $b:block) => {
-        #[allow(unused_unsafe)]
-        unsafe extern "C" fn $name(obj: *mut ::libweston_sys::$westontyp, user_data: *mut ::libc::c_void) {
-            let mut $objarg: $objtyp = obj.into();
-            let $datarg = &mut *(user_data as *mut $dattyp);
-            $b;
-            ::std::mem::forget($objarg);
         }
     };
 }

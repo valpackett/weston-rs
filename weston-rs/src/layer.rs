@@ -33,29 +33,29 @@ pub enum LayerPosition {
 }
 
 pub struct Layer<'comp> {
-    layer: weston_layer,
+    layer: Box<weston_layer>,
     phantom: marker::PhantomData<&'comp Compositor>,
 }
 
 impl<'comp> Layer<'comp> {
-    pub fn new(compositor: &'comp Compositor) -> Box<Layer<'comp>> {
-        let mut result = Box::new(Layer {
-            layer: unsafe { mem::zeroed() },
+    pub fn new(compositor: &'comp Compositor) -> Layer<'comp> {
+        let mut result = Layer {
+            layer: Box::new(unsafe { mem::zeroed() }),
             phantom: marker::PhantomData,
-        });
-        unsafe { weston_layer_init(&mut result.layer, compositor.ptr()); }
+        };
+        unsafe { weston_layer_init(&mut *result.layer, compositor.ptr()); }
         result
     }
 
     pub fn set_position(&mut self, position: LayerPosition) {
-        unsafe { weston_layer_set_position(&mut self.layer, position as weston_layer_position); }
+        unsafe { weston_layer_set_position(&mut *self.layer, position as weston_layer_position); }
     }
 
     pub fn entry_insert(&mut self, view: &mut View) {
-        unsafe { weston_layer_entry_insert(&mut self.layer.view_list, view.layer_link()); }
+        unsafe { weston_layer_entry_insert(&mut (*self.layer).view_list, view.layer_link()); }
     }
 
     pub fn ptr(&mut self) -> *mut weston_layer {
-        &mut self.layer
+        &mut *self.layer
     }
 }

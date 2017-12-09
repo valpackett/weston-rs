@@ -7,9 +7,6 @@ extern crate weston_rs;
 extern crate wayland_sys;
 
 use std::{mem, env, ffi, process};
-use libweston_sys::{
-    weston_desktop_api
-};
 use weston_rs::*;
 use wayland_sys::server::*;
 
@@ -22,11 +19,9 @@ weston_logger!{fn wlog_continue(msg: &str) {
 }}
 
 struct Context<'a> {
-    compositor: *mut Compositor,
     backend: WaylandBackend<'a>,
     output: WindowedOutput<'a>,
     output_pending_listener: wl_listener,
-    windows_layer: Box<Layer<'a>>,
 }
 
 struct SurfaceContext {
@@ -41,28 +36,33 @@ weston_callback!{wl unsafe fn output_pending_virtual(
     output.enable();
 }}
 
-weston_callback!{api(weston_desktop_surface) unsafe fn surface_added(
-        dsurf: DesktopSurface<SurfaceContext>, ctx: &mut Context) {
-    let mut view = dsurf.create_view();
-    ctx.windows_layer.entry_insert(&mut view);
-    view.set_position(0.0, -1.0);
-    dsurf.get_surface().damage();
-    (*ctx.compositor).schedule_repaint();
-    let mut sctx = mem::ManuallyDrop::new(SurfaceContext {
-        view: Some(view),
-    });
-    dsurf.set_user_data(&mut sctx);
-}}
+struct DesktopImpl<'a> {
+    compositor: *mut Compositor,
+    windows_layer: Layer<'a>,
+}
 
-weston_callback!{api(weston_desktop_surface) unsafe fn surface_removed(
-        dsurf: DesktopSurface<SurfaceContext>, ctx: &mut Context) {
-    {
-        let mut sctx = dsurf.get_user_data();
-        //let mut view = sctx.view.take().unwrap();
-        //dsurf.unlink_view(&mut view);
+impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
+    fn surface_added(&mut self, surface: &mut DesktopSurface<SurfaceContext>) {
+        let mut view = surface.create_view();
+        self.windows_layer.entry_insert(&mut view);
+        view.set_position(0.0, -1.0);
+        surface.get_surface().damage();
+        unsafe { (*self.compositor).schedule_repaint(); }
+        let mut sctx = mem::ManuallyDrop::new(SurfaceContext {
+            view: Some(view),
+        });
+        surface.set_user_data(&mut sctx);
     }
-    dsurf.unset_user_data();
-}}
+
+    fn surface_removed(&mut self, surface: &mut DesktopSurface<SurfaceContext>) {
+        {
+            let _ = surface.get_user_data();
+            //let mut view = sctx.view.take().unwrap();
+            //surface.unlink_view(&mut view);
+        }
+        surface.unset_user_data();
+    }
+}
 
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
@@ -86,19 +86,19 @@ fn main() {
     let mut bg_view = View::new(&bg_surf);
     bg_layer.entry_insert(&mut bg_view);
 
-    let mut desktop_api: weston_desktop_api = unsafe { mem::zeroed() };
-    desktop_api.struct_size = mem::size_of::<weston_desktop_api>();
-    desktop_api.surface_added = Some(surface_added);
-    desktop_api.surface_removed = Some(surface_removed);
-
-    let mut windows_layer = Layer::new(&compositor);
+    let mut windows_layer = Layer::new(unsafe { &*compositor_ptr });
     windows_layer.set_position(LayerPosition::Normal);
 
-    let ctx = Context {
-       compositor: compositor_ptr, backend, output, output_pending_listener, windows_layer
+    // is found as the parent struct in the listener
+    let _ = Context {
+       backend, output, output_pending_listener
     };
 
-    let desktop = Desktop::new(unsafe { &*ctx.compositor }, &desktop_api, &ctx);
+    let desktop_impl = Box::new(DesktopImpl {
+        compositor: compositor_ptr, windows_layer
+    });
+
+    let desktop = Desktop::new(unsafe { &*compositor_ptr }, desktop_impl);
 
     let sock_name = display.add_socket_auto();
     env::remove_var("DISPLAY");
@@ -107,6 +107,6 @@ fn main() {
 
     let _ = process::Command::new("gtk3-demo").spawn().expect("spawn");
 
-    unsafe { (*ctx.compositor).wake(); }
+    unsafe { (*compositor_ptr).wake(); }
     display.run();
 }
