@@ -8,7 +8,6 @@ extern crate wayland_sys;
 
 use std::{mem, env, ffi, process};
 use weston_rs::*;
-use wayland_sys::server::*;
 
 weston_logger!{fn wlog(msg: &str) {
     eprint!("WESTON: {}", msg);
@@ -18,23 +17,9 @@ weston_logger!{fn wlog_continue(msg: &str) {
     eprint!("{}", msg);
 }}
 
-struct Context<'a> {
-    backend: WaylandBackend<'a>,
-    output: WindowedOutput<'a>,
-    output_pending_listener: wl_listener,
-}
-
 struct SurfaceContext {
     view: Option<View>,
 }
-
-weston_callback!{wl unsafe fn output_pending_virtual(
-        ctx: &mut Context | output_pending_listener, output: &mut Output) {
-    output.set_scale(1);
-    output.set_transform(0);
-    ctx.output.output_set_size(output, 1280, 720);
-    output.enable();
-}}
 
 struct DesktopImpl<'a> {
     compositor: *mut Compositor,
@@ -70,12 +55,17 @@ fn main() {
     let mut compositor = Compositor::new(&display);
     let compositor_ptr = { &mut compositor as *mut _ };
     compositor.set_xkb_rule_names(None);
-    let backend = WaylandBackend::new(&compositor);
-    let output = WindowedOutput::new(&compositor);
-    let mut output_pending_listener: wl_listener = unsafe { mem::zeroed() };
-    output.output_create(&compositor, "weston-rs simple example");
-    output_pending_listener.notify = output_pending_virtual;
-    unsafe { signal::wl_signal_add(compositor.output_pending_signal(), &mut output_pending_listener); }
+    let _ = WaylandBackend::new(&compositor);
+    let output_api = WindowedOutput::new(unsafe { &*compositor_ptr });
+    output_api.output_create(&compositor, "weston-rs simple example");
+    let output_api_ptr = { &output_api as *const _ };
+    WlListener::new(Box::new(move |ou: &mut Output| {
+        ou.set_scale(1);
+        ou.set_transform(0);
+        let oapi: &WindowedOutput = unsafe { &*output_api_ptr };
+        oapi.output_set_size(&ou, 1280, 720);
+        ou.enable();
+    })).signal_add(compositor.output_pending_signal());
     compositor.pending_output_coldplug();
 
     let mut bg_layer = Layer::new(&compositor);
@@ -88,11 +78,6 @@ fn main() {
 
     let mut windows_layer = Layer::new(unsafe { &*compositor_ptr });
     windows_layer.set_position(LayerPosition::Normal);
-
-    // is found as the parent struct in the listener
-    let _ = Context {
-       backend, output, output_pending_listener
-    };
 
     let desktop_impl = Box::new(DesktopImpl {
         compositor: compositor_ptr, windows_layer

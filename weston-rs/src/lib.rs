@@ -4,7 +4,7 @@ pub extern crate libc;
 pub extern crate vsprintf;
 #[macro_use]
 extern crate const_cstr;
-//#[macro_use]
+#[macro_use]
 extern crate memoffset;
 
 macro_rules! prop_accessors {
@@ -15,6 +15,7 @@ macro_rules! prop_accessors {
     }
 }
 
+pub mod listener;
 pub mod display;
 pub mod compositor;
 pub mod backend;
@@ -26,6 +27,7 @@ pub mod view;
 pub mod desktop;
 
 pub use memoffset::*;
+pub use listener::*;
 pub use display::*;
 pub use compositor::*;
 pub use backend::*;
@@ -35,30 +37,6 @@ pub use layer::*;
 pub use surface::*;
 pub use view::*;
 pub use desktop::*;
-
-#[macro_export]
-macro_rules! wl_container_of {
-    ($ptr:expr, $type:ident, $member:ident) => {{
-        ($ptr as *mut u8).offset(-1 * offset_of!($type, $member) as isize) as *mut $type
-    }}
-}
-
-#[macro_export]
-macro_rules! weston_callback {
-    (wl unsafe fn $name:ident ($ctxarg:tt : &mut $ctxtyp:tt | $field:ident, $datarg:tt : &mut $dattyp:ty) $b:block) => {
-        #[allow(unused_unsafe)]
-        unsafe extern "C" fn $name(listener: *mut ::wayland_sys::server::wl_listener, data: *mut ::std::os::raw::c_void) {
-            let mut __data: $dattyp = data.into();
-            {
-                let $ctxarg = &mut *wl_container_of!(listener, $ctxtyp, $field);
-                let $datarg = &mut __data;
-                $b;
-            }
-            ::std::mem::forget(__data);
-        }
-    };
-}
-
 
 #[macro_export]
 macro_rules! weston_logger {
