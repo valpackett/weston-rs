@@ -3,6 +3,7 @@ name = "weston-rs"
 version = "0.0.0"
 authors = [ "Val Packett <val@packett.cool>" ]
 keywords = [ "Weston", "Wayland", "Compositor" ]
+categories = ["api-bindings", "gui"]
 description = "Rust wrapper around libweston (with libweston-desktop), the reference Wayland compositor library"
 license = "MIT"
 homepage = "https://github.com/valpackett/weston-rs"
