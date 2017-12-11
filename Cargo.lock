@@ -416,6 +416,7 @@ name = "weston-rs"
 version = "0.0.0"
 dependencies = [
  "const-cstr 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
  "libweston-sys 0.0.0",
  "memoffset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",

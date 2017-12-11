@@ -14,6 +14,8 @@ pub struct Compositor {
     ptr: *mut weston_compositor,
 }
 
+unsafe impl Sync for Compositor {}
+
 impl Compositor {
     pub fn new(display: &Display) -> Compositor {
         let mut result = Compositor {
@@ -24,7 +26,7 @@ impl Compositor {
         result
     }
 
-    pub fn set_xkb_rule_names(&mut self, names: Option<*mut xkb_rule_names>) {
+    pub fn set_xkb_rule_names(&self, names: Option<*mut xkb_rule_names>) {
         unsafe { weston_compositor_set_xkb_rule_names(self.ptr, names.unwrap_or(ptr::null_mut())); }
     }
 
@@ -40,7 +42,7 @@ impl Compositor {
         unsafe { weston_compositor_wake(self.ptr); }
     }
 
-    pub fn shutdown(&mut self) {
+    pub fn shutdown(&self) {
         unsafe { weston_compositor_shutdown(self.ptr); }
     }
 

@@ -5,6 +5,8 @@ pub struct Display {
     ptr: *mut wl_display,
 }
 
+unsafe impl Sync for Display {}
+
 impl Display {
     pub fn new() -> Display {
         Display {

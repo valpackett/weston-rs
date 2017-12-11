@@ -15,7 +15,7 @@ pub use self::client::DesktopClient;
 pub use self::surface::DesktopSurface;
 
 
-pub struct Desktop<'comp, SC: 'comp> {
+pub struct Desktop<'comp, SC> {
     ptr: *mut weston_desktop,
     wapi: Box<weston_desktop_api>,
     api: Box<Box<DesktopApi<SC>>>, // heard you like boxes :D

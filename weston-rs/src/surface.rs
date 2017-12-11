@@ -23,11 +23,11 @@ impl Surface {
         }
     }
 
-    pub fn set_size(&mut self, width: i32, height: i32) {
+    pub fn set_size(&self, width: i32, height: i32) {
         unsafe { weston_surface_set_size(self.ptr, width, height); }
     }
 
-    pub fn set_color(&mut self, red: f32, green: f32, blue: f32, alpha: f32) {
+    pub fn set_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
         unsafe { weston_surface_set_color(self.ptr, red, green, blue, alpha); }
     }
 

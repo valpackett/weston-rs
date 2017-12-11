@@ -12,14 +12,14 @@ pub trait Backend {
 
 pub struct WaylandBackend<'comp> {
     id: libc::c_int,
-    // cursor_theme: ffi::CString,
-    // conf: weston_wayland_backend_config,
+    _cursor_theme: ffi::CString,
     phantom: marker::PhantomData<&'comp Compositor>,
 }
 
 impl<'comp> WaylandBackend<'comp> {
     pub fn new(compositor: &Compositor) -> WaylandBackend {
-        let cursor_theme = ffi::CString::new("Adwaita").unwrap();
+        let cursor_theme = ffi::CString::new("default").unwrap();
+        // conf will get memcpy'd by libweston
         let mut conf = weston_wayland_backend_config {
             base: weston_backend_config {
                 struct_version: 2,
@@ -37,8 +37,7 @@ impl<'comp> WaylandBackend<'comp> {
                 &mut conf.base as *mut _) };
         WaylandBackend {
             id,
-            // cursor_theme,
-            // conf,
+            _cursor_theme: cursor_theme,
             phantom: marker::PhantomData,
         }
     }

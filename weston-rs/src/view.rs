@@ -24,7 +24,7 @@ impl View {
         }
     }
 
-    pub fn set_position(&mut self, x: f32, y: f32) {
+    pub fn set_position(&self, x: f32, y: f32) {
         unsafe { weston_view_set_position(self.ptr, x, y); }
     }
 

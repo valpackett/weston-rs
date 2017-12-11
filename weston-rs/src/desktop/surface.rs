@@ -28,16 +28,32 @@ impl<T> DesktopSurface<T> {
         self.ptr
     }
 
-    pub fn set_user_data(&mut self, data: &mut T) {
-        unsafe { weston_desktop_surface_set_user_data(self.ptr, data as *mut _ as *mut libc::c_void); }
+    pub fn set_user_data(&self, data: Box<T>) -> Option<Box<T>> {
+        let prev = self.get_user_data();
+        unsafe { weston_desktop_surface_set_user_data(self.ptr, Box::into_raw(data) as *mut libc::c_void); }
+        prev
     }
 
-    pub fn get_user_data(&self) -> &mut T {
-        unsafe { &mut *(weston_desktop_surface_get_user_data(self.ptr) as *mut T) }
+    pub fn get_user_data(&self) -> Option<Box<T>> {
+        unsafe {
+            let ptr = weston_desktop_surface_get_user_data(self.ptr) as *mut T;
+            if ptr.is_null() {
+                return None
+            }
+            let bx = Box::from_raw(ptr);
+            weston_desktop_surface_set_user_data(self.ptr, ptr::null_mut());
+            Some(bx)
+        }
     }
 
-    pub fn unset_user_data(&mut self) {
-        unsafe { weston_desktop_surface_set_user_data(self.ptr, ptr::null_mut()); }
+    pub fn borrow_user_data(&self) -> Option<&mut T> {
+        unsafe {
+            let ptr = weston_desktop_surface_get_user_data(self.ptr) as *mut T;
+            if ptr.is_null() {
+                return None
+            }
+            Some(&mut *(ptr))
+        }
     }
 
     pub fn get_surface<'a>(&'a self) -> &'a mut Surface {
@@ -47,7 +63,7 @@ impl<T> DesktopSurface<T> {
         }
     }
 
-    pub fn create_view(&mut self) -> View {
+    pub fn create_view(&self) -> View {
         unsafe { weston_desktop_surface_create_view(self.ptr).into() }
     }
 
