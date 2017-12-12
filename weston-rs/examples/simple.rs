@@ -61,6 +61,7 @@ fn main() {
     output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
     WlListener::new(Box::new(move |ou: &mut Output| {
         ou.set_scale(1);
+        ou.set_extra_scale(1.0);
         ou.set_transform(0);
         output_api.output_set_size(&ou, 1280, 720);
         ou.enable();

@@ -2,7 +2,7 @@ use libc;
 use std::os;
 use libweston_sys::{
     weston_output,
-    weston_output_set_scale, weston_output_set_transform,
+    weston_output_set_scale, weston_output_set_extra_scale, weston_output_set_transform,
     weston_output_enable, weston_output_disable,
     weston_output_release
 };
@@ -29,6 +29,10 @@ impl From<*mut os::raw::c_void> for Output {
 impl Output {
     pub fn set_scale(&self, scale: libc::c_int) {
         unsafe { weston_output_set_scale(self.ptr, scale); }
+    }
+
+    pub fn set_extra_scale(&self, scale: libc::c_float) {
+        unsafe { weston_output_set_extra_scale(self.ptr, scale); }
     }
 
     pub fn set_transform(&self, transform: libc::c_uint) {
