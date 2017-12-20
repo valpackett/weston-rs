@@ -51,6 +51,16 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         surface.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
     }
+
+    fn moove(&mut self, surface: &mut DesktopSurface<SurfaceContext>, seat: &mut Seat, serial: u32) {
+        if let Some(pointer) = seat.get_pointer() {
+            println!("Move pointer {} v {}", serial, pointer.grab_serial());
+            // TODO
+        } else if let Some(touch) = seat.get_touch() {
+            println!("Move touch {} v {}", serial, touch.grab_serial());
+            // TODO
+        }
+    }
 }
 
 fn main() {

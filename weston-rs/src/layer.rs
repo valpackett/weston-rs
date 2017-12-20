@@ -18,7 +18,7 @@ use ::compositor::Compositor;
 use ::view::View;
 
 #[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Primitive)]
 pub enum LayerPosition {
     Hidden = weston_layer_position_WESTON_LAYER_POSITION_HIDDEN,
     Background = weston_layer_position_WESTON_LAYER_POSITION_BACKGROUND,

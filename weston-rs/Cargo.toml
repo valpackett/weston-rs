@@ -16,6 +16,8 @@ libc = "0.2"
 vsprintf = "1"
 const-cstr = "0"
 memoffset = "0"
+enum-primitive-derive = "0"
+num-traits = "0"
 
 [dev-dependencies]
 lazy_static = "1"

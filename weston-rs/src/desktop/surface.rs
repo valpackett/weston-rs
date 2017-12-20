@@ -1,13 +1,36 @@
 use libc;
-use std::{ptr, mem, marker};
+use std::{ptr, marker};
 use libweston_sys::{
     weston_desktop_surface,
     weston_desktop_surface_get_user_data, weston_desktop_surface_set_user_data,
     weston_desktop_surface_get_surface,
-    weston_desktop_surface_create_view, weston_desktop_surface_unlink_view
+    weston_desktop_surface_create_view, weston_desktop_surface_unlink_view,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_NONE,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_LEFT,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_LEFT,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_LEFT,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_RIGHT,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_RIGHT,
+    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT
 };
 use ::surface::Surface;
 use ::view::View;
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Primitive)]
+pub enum SurfaceEdge {
+    None = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_NONE,
+    Top = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP,
+    Bottom = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM,
+    Left = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_LEFT,
+    TopLeft = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_LEFT,
+    BottomLeft = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_LEFT,
+    Right = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_RIGHT,
+    TopRight = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_RIGHT,
+    BottomRight = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT,
+}
 
 pub struct DesktopSurface<T> {
     ptr: *mut weston_desktop_surface,
@@ -56,12 +79,7 @@ impl<T> DesktopSurface<T> {
         }
     }
 
-    pub fn get_surface<'a>(&'a self) -> &'a mut Surface {
-        let mut surf = mem::ManuallyDrop::new(unsafe { weston_desktop_surface_get_surface(self.ptr) }.into());
-        unsafe {
-            mem::transmute::<&mut Surface, &'a mut Surface>(&mut *surf)
-        }
-    }
+    obj_accessors!(Surface | get_surface = |&this| { weston_desktop_surface_get_surface(this.ptr) });
 
     pub fn create_view(&self) -> View {
         unsafe { weston_desktop_surface_create_view(self.ptr).into() }
