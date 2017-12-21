@@ -4,96 +4,97 @@ use num_traits::FromPrimitive;
 use libweston_sys::{
     weston_desktop_api, weston_desktop_surface, weston_seat, weston_output
 };
+use ::WestonObject;
 use ::output::Output;
 use ::seat::Seat;
 use super::surface::{DesktopSurface, SurfaceEdge};
 
 pub trait DesktopApi<SC> {
-    fn surface_added(&mut self, surface: &mut DesktopSurface<SC>);
+    fn surface_added(&mut self, surface: DesktopSurface<SC>);
 
-    fn surface_removed(&mut self, surface: &mut DesktopSurface<SC>);
+    fn surface_removed(&mut self, surface: DesktopSurface<SC>);
 
-    fn committed(&mut self, _surface: &mut DesktopSurface<SC>, _sx: i32, _sy: i32) {}
+    fn committed(&mut self, _surface: DesktopSurface<SC>, _sx: i32, _sy: i32) {}
 
-    fn show_window_menu(&mut self, _surface: &mut DesktopSurface<SC>, _seat: &mut Seat, _x: i32, _y: i32) {}
+    fn show_window_menu(&mut self, _surface: DesktopSurface<SC>, _seat: Seat, _x: i32, _y: i32) {}
 
-    fn set_parent(&mut self, _surface: &mut DesktopSurface<SC>, _parent: &mut DesktopSurface<SC>) {}
+    fn set_parent(&mut self, _surface: DesktopSurface<SC>, _parent: DesktopSurface<SC>) {}
 
     /// Named like that because `move` is a Rust keyword
-    fn moove(&mut self, _surface: &mut DesktopSurface<SC>, _seat: &mut Seat, _serial: u32) {}
+    fn moove(&mut self, _surface: DesktopSurface<SC>, _seat: Seat, _serial: u32) {}
 
-    fn resize(&mut self, _surface: &mut DesktopSurface<SC>, _seat: &mut Seat, _serial: u32, _edges: SurfaceEdge) {}
+    fn resize(&mut self, _surface: DesktopSurface<SC>, _seat: Seat, _serial: u32, _edges: SurfaceEdge) {}
 
-    fn fullscreen_requested(&mut self, _surface: &mut DesktopSurface<SC>, _fullscreen: bool, _output: &mut Output) {}
+    fn fullscreen_requested(&mut self, _surface: DesktopSurface<SC>, _fullscreen: bool, _output: Output) {}
 
-    fn maximized_requested(&mut self, _surface: &mut DesktopSurface<SC>, _maximized: bool) {}
+    fn maximized_requested(&mut self, _surface: DesktopSurface<SC>, _maximized: bool) {}
 
-    fn minimized_requested(&mut self, _surface: &mut DesktopSurface<SC>) {}
+    fn minimized_requested(&mut self, _surface: DesktopSurface<SC>) {}
 }
 
 pub extern "C" fn run_surface_added<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.surface_added(&mut surface);
+    api.surface_added(surface);
 }
 
 pub extern "C" fn run_surface_removed<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.surface_removed(&mut surface);
+    api.surface_removed(surface);
 }
 
 pub extern "C" fn run_committed<SC>(surface: *mut weston_desktop_surface, sx: i32, sy: i32, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.committed(&mut surface, sx, sy);
+    api.committed(surface, sx, sy);
 }
 
 pub extern "C" fn run_show_window_menu<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, x: i32, y: i32, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
-    let mut seat = mem::ManuallyDrop::new(seat.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
+    let seat = Seat::from_ptr_temporary(seat);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.show_window_menu(&mut surface, &mut seat, x, y);
+    api.show_window_menu(surface, seat, x, y);
 }
 
 pub extern "C" fn run_set_parent<SC>(surface: *mut weston_desktop_surface, parent: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
-    let mut parent = mem::ManuallyDrop::new(parent.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
+    let parent = DesktopSurface::from_ptr_temporary(parent);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.set_parent(&mut surface, &mut parent);
+    api.set_parent(surface, parent);
 }
 
 pub extern "C" fn run_move<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, serial: u32, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
-    let mut seat = mem::ManuallyDrop::new(seat.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
+    let seat = Seat::from_ptr_temporary(seat);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.moove(&mut surface, &mut seat, serial);
+    api.moove(surface, seat, serial);
 }
 
 pub extern "C" fn run_resize<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, serial: u32, edges: u32, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
-    let mut seat = mem::ManuallyDrop::new(seat.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
+    let seat = Seat::from_ptr_temporary(seat);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.resize(&mut surface, &mut seat, serial, SurfaceEdge::from_u32(edges).unwrap_or(SurfaceEdge::None));
+    api.resize(surface, seat, serial, SurfaceEdge::from_u32(edges).unwrap_or(SurfaceEdge::None));
 }
 
 pub extern "C" fn run_fullscreen_requested<SC>(surface: *mut weston_desktop_surface, fullscreen: bool, output: *mut weston_output, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
-    let mut output = mem::ManuallyDrop::new(output.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
+    let output = Output::from_ptr_temporary(output);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.fullscreen_requested(&mut surface, fullscreen, &mut output);
+    api.fullscreen_requested(surface, fullscreen, output);
 }
 
 pub extern "C" fn run_maximized_requested<SC>(surface: *mut weston_desktop_surface, maximized: bool, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.maximized_requested(&mut surface, maximized);
+    api.maximized_requested(surface, maximized);
 }
 
 pub extern "C" fn run_minimized_requested<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let mut surface = mem::ManuallyDrop::new(surface.into());
+    let surface = DesktopSurface::from_ptr_temporary(surface);
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.minimized_requested(&mut surface);
+    api.minimized_requested(surface);
 }
 
 pub fn make_weston_api<SC>() -> Box<weston_desktop_api> {

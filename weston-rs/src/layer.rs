@@ -14,6 +14,7 @@ use libweston_sys::{
     weston_layer_position_WESTON_LAYER_POSITION_FADE,
     weston_layer_entry_insert
 };
+use ::WestonObject;
 use ::compositor::Compositor;
 use ::view::View;
 

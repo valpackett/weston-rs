@@ -15,6 +15,7 @@ use libweston_sys::{
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_RIGHT,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT
 };
+use ::WestonObject;
 use ::surface::Surface;
 use ::view::View;
 
@@ -32,25 +33,16 @@ pub enum SurfaceEdge {
     BottomRight = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT,
 }
 
+#[allow(dead_code)]
 pub struct DesktopSurface<T> {
     ptr: *mut weston_desktop_surface,
+    temp: bool,
     phantom: marker::PhantomData<T>,
 }
 
-impl<T> From<*mut weston_desktop_surface> for DesktopSurface<T> {
-    fn from(ptr: *mut weston_desktop_surface) -> DesktopSurface<T> {
-        DesktopSurface {
-            ptr: ptr,
-            phantom: marker::PhantomData::<T>,
-        }
-    }
-}
+weston_object!(DesktopSurface<T> << weston_desktop_surface);
 
 impl<T> DesktopSurface<T> {
-    pub fn ptr(&self) -> *mut weston_desktop_surface {
-        self.ptr
-    }
-
     pub fn set_user_data(&self, data: Box<T>) -> Option<Box<T>> {
         let prev = self.get_user_data();
         unsafe { weston_desktop_surface_set_user_data(self.ptr, Box::into_raw(data) as *mut libc::c_void); }
@@ -82,7 +74,7 @@ impl<T> DesktopSurface<T> {
     obj_accessors!(Surface | get_surface = |&this| { weston_desktop_surface_get_surface(this.ptr) });
 
     pub fn create_view(&self) -> View {
-        unsafe { weston_desktop_surface_create_view(self.ptr).into() }
+        View::from_ptr(unsafe { weston_desktop_surface_create_view(self.ptr) })
     }
 
     pub fn unlink_view(&self, view: &mut View) {

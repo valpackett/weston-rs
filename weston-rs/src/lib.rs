@@ -10,8 +10,81 @@ extern crate const_cstr;
 #[macro_use]
 extern crate memoffset;
 
+use std::os::raw::c_void;
+
+pub trait WestonObject<T> where Self: Sized {
+    fn from_ptr(ptr: *mut T) -> Self;
+    fn from_ptr_temporary(ptr: *mut T) -> Self;
+    fn ptr(&self) -> *mut T;
+
+    fn from_void_ptr(ptr: *mut c_void) -> Self {
+        Self::from_ptr(ptr as *mut T)
+    }
+
+    fn from_void_ptr_temporary(ptr: *mut c_void) -> Self {
+        Self::from_ptr_temporary(ptr as *mut T)
+    }
+}
+
+macro_rules! weston_object {
+    ($wrap:ident << $typ:ident $($k:ident : $v:expr),*) => {
+        impl ::WestonObject<$typ> for $wrap {
+            #[inline] fn from_ptr(ptr: *mut $typ) -> $wrap {
+                $wrap {
+                    ptr,
+                    temp: false,
+                    $($k: $v)*
+                }
+            }
+
+            #[inline] fn from_ptr_temporary(ptr: *mut $typ) -> $wrap {
+                $wrap {
+                    ptr,
+                    temp: true,
+                    $($k: $v)*
+                }
+            }
+
+            #[inline] fn ptr(&self) -> *mut $typ {
+                self.ptr
+            }
+        }
+    };
+    ($wrap:ident<$tvar:ident> << $typ:ident $($k:ident : $v:expr),*) => {
+        impl<$tvar> ::WestonObject<$typ> for $wrap<$tvar> {
+            #[inline] fn from_ptr(ptr: *mut $typ) -> $wrap<$tvar> {
+                $wrap {
+                    ptr,
+                    temp: false,
+                    phantom: ::std::marker::PhantomData::<$tvar>,
+                    $($k: $v)*
+                }
+            }
+
+            #[inline] fn from_ptr_temporary(ptr: *mut $typ) -> $wrap<$tvar> {
+                $wrap {
+                    ptr,
+                    temp: true,
+                    phantom: ::std::marker::PhantomData::<$tvar>,
+                    $($k: $v)*
+                }
+            }
+
+            #[inline] fn ptr(&self) -> *mut $typ {
+                self.ptr
+            }
+        }
+    }
+
+}
+
 macro_rules! prop_accessors {
     ($typ:ty | $($prop:ident),+) => {
+        $(#[inline] pub fn $prop(&self) -> $typ {
+            unsafe { (*self.ptr).$prop }
+        })+
+    };
+    (ptr $typ:ty | $($prop:ident),+) => {
         $(#[inline] pub fn $prop(&self) -> &mut $typ {
             unsafe { &mut (*self.ptr).$prop }
         })+
@@ -19,20 +92,20 @@ macro_rules! prop_accessors {
 }
 
 macro_rules! obj_accessors {
-    ($typ:ty | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a>(&'a self) -> &'a mut $typ {
-            let mut obj = ::std::mem::ManuallyDrop::new((unsafe { let $self = &self; $acc }).into());
-            unsafe { ::std::mem::transmute::<&mut $typ, &'a mut $typ>(&mut *obj) }
+    ($typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
+        $(#[inline] pub fn $prop<'a>(&'a self) -> $typ {
+            use ::WestonObject;
+            $typ::from_ptr_temporary(unsafe { let $self = &self; $acc })
         })+
     };
-    (opt $typ:ty | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a>(&'a self) -> Option<&'a mut $typ> {
+    (opt $typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
+        $(#[inline] pub fn $prop<'a>(&'a self) -> Option<$typ> {
+            use ::WestonObject;
             let ptr = unsafe { let $self = &self; $acc };
             if ptr.is_null() {
                 None
             } else {
-                let mut obj = ::std::mem::ManuallyDrop::new(ptr.into());
-                Some(unsafe { ::std::mem::transmute::<&mut $typ, &'a mut $typ>(&mut *obj) })
+                Some($typ::from_ptr_temporary(ptr))
             }
         })+
     }

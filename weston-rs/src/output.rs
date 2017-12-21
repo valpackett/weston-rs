@@ -1,5 +1,4 @@
 use libc;
-use std::os;
 use libweston_sys::{
     weston_output,
     weston_output_set_scale, weston_output_set_extra_scale, weston_output_set_transform,
@@ -10,23 +9,13 @@ use wayland_sys::server::wl_signal;
 
 pub struct Output {
     ptr: *mut weston_output,
+    temp: bool,
 }
 
-impl From<*mut weston_output> for Output {
-    fn from(ptr: *mut weston_output) -> Output {
-        Output {
-            ptr,
-        }
-    }
-}
-
-impl From<*mut os::raw::c_void> for Output {
-    fn from(ptr: *mut os::raw::c_void) -> Output {
-        Self::from(ptr as *mut weston_output)
-    }
-}
+weston_object!(Output << weston_output);
 
 impl Output {
+
     pub fn set_scale(&self, scale: libc::c_int) {
         unsafe { weston_output_set_scale(self.ptr, scale); }
     }
@@ -47,15 +36,13 @@ impl Output {
         unsafe { weston_output_disable(self.ptr); }
     }
 
-    prop_accessors!(wl_signal | frame_signal, destroy_signal);
-
-    pub fn ptr(&self) -> *mut weston_output {
-        self.ptr
-    }
+    prop_accessors!(ptr wl_signal | frame_signal, destroy_signal);
 }
 
 impl Drop for Output {
     fn drop(&mut self) {
-        unsafe { weston_output_release(self.ptr); }
+        if !self.temp {
+            unsafe { weston_output_release(self.ptr); }
+        }
     }
 }

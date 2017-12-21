@@ -35,7 +35,7 @@ struct DesktopImpl<'a> {
 }
 
 impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
-    fn surface_added(&mut self, surface: &mut DesktopSurface<SurfaceContext>) {
+    fn surface_added(&mut self, surface: DesktopSurface<SurfaceContext>) {
         let mut view = surface.create_view();
         self.windows_layer.entry_insert(&mut view);
         view.set_position(0.0, -1.0);
@@ -46,18 +46,20 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         }));
     }
 
-    fn surface_removed(&mut self, surface: &mut DesktopSurface<SurfaceContext>) {
+    fn surface_removed(&mut self, surface: DesktopSurface<SurfaceContext>) {
         let mut sctx = surface.get_user_data().expect("user_data");
         surface.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
     }
 
-    fn moove(&mut self, surface: &mut DesktopSurface<SurfaceContext>, seat: &mut Seat, serial: u32) {
+    fn moove(&mut self, surface: DesktopSurface<SurfaceContext>, seat: Seat, serial: u32) {
         if let Some(pointer) = seat.get_pointer() {
-            println!("Move pointer {} v {}", serial, pointer.grab_serial());
-            // TODO
+            if let Some(focus) = pointer.focus() {
+                if pointer.button_count() > 0 && serial == pointer.grab_serial() {
+                    // TODO
+                }
+            }
         } else if let Some(touch) = seat.get_touch() {
-            println!("Move touch {} v {}", serial, touch.grab_serial());
             // TODO
         }
     }
@@ -69,7 +71,7 @@ fn main() {
     let _backend = WaylandBackend::new(&*COMPOSITOR);
     let output_api = WindowedOutput::new(&*COMPOSITOR);
     output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
-    WlListener::new(Box::new(move |ou: &mut Output| {
+    WlListener::new(Box::new(move |ou: Output| {
         ou.set_scale(1);
         ou.set_extra_scale(1.0);
         ou.set_transform(0);

@@ -4,6 +4,7 @@ use libweston_sys::{
     weston_backend_config,
     weston_wayland_backend_init, weston_wayland_backend_config
 };
+use ::WestonObject;
 use ::compositor::Compositor;
 
 pub trait Backend {

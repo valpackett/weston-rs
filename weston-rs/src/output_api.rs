@@ -3,6 +3,7 @@ use libweston_sys::{
     weston_plugin_api_get,
     weston_windowed_output_api,
 };
+use ::WestonObject;
 use ::compositor::Compositor;
 use ::output::Output;
 

@@ -1,6 +1,7 @@
-use std::mem;
+use std::{mem, marker};
 use std::os::raw::c_void;
 use wayland_sys::server::{signal, wl_signal, wl_listener};
+use ::WestonObject;
 
 #[macro_export]
 macro_rules! wl_container_of {
@@ -9,25 +10,26 @@ macro_rules! wl_container_of {
     }}
 }
 
-pub struct WlListener<T> {
-    cb: Box<FnMut(&mut T)>,
+pub struct WlListener<P, T: WestonObject<P>> {
+    cb: Box<FnMut(T)>,
     wll: wl_listener,
+    phantom: marker::PhantomData<P>,
 }
 
 #[allow(unused_unsafe)]
-extern "C" fn run_wl_listener<T: From<*mut c_void>>(listener: *mut wl_listener, data: *mut c_void) {
-    let wrapper = unsafe { &mut *wl_container_of!(listener, WlListener<T>, wll) };
-    let mut obj = mem::ManuallyDrop::new(data.into());
-    (*wrapper.cb)(&mut obj);
+extern "C" fn run_wl_listener<P, T: WestonObject<P>>(listener: *mut wl_listener, data: *mut c_void) {
+    let wrapper = unsafe { &mut *wl_container_of!(listener, WlListener<P, T>, wll) };
+    (*wrapper.cb)(T::from_void_ptr_temporary(data));
 }
 
-impl<T: From<*mut c_void>> WlListener<T> {
-    pub fn new(cb: Box<FnMut(&mut T)>) -> Box<WlListener<T>> {
+impl<P, T: WestonObject<P>> WlListener<P, T> {
+    pub fn new(cb: Box<FnMut(T)>) -> Box<WlListener<P, T>> {
         let mut result = Box::new(WlListener {
             cb,
             wll: unsafe { mem::zeroed() },
+            phantom: marker::PhantomData::<P>,
         });
-        result.wll.notify = run_wl_listener::<T>;
+        result.wll.notify = run_wl_listener::<P, T>;
         result
     }
 

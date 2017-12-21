@@ -4,6 +4,7 @@ use libweston_sys::{
     weston_desktop, weston_desktop_create, weston_desktop_destroy,
     weston_desktop_api,
 };
+use ::WestonObject;
 use ::compositor::Compositor;
 
 pub mod api;
