@@ -10,26 +10,24 @@ macro_rules! wl_container_of {
     }}
 }
 
-pub struct WlListener<P, T: WestonObject<P>> {
+pub struct WlListener<T: WestonObject> {
     cb: Box<FnMut(T)>,
     wll: wl_listener,
-    phantom: marker::PhantomData<P>,
 }
 
 #[allow(unused_unsafe)]
-extern "C" fn run_wl_listener<P, T: WestonObject<P>>(listener: *mut wl_listener, data: *mut c_void) {
-    let wrapper = unsafe { &mut *wl_container_of!(listener, WlListener<P, T>, wll) };
+extern "C" fn run_wl_listener<T: WestonObject>(listener: *mut wl_listener, data: *mut c_void) {
+    let wrapper = unsafe { &mut *wl_container_of!(listener, WlListener<T>, wll) };
     (*wrapper.cb)(T::from_void_ptr_temporary(data));
 }
 
-impl<P, T: WestonObject<P>> WlListener<P, T> {
-    pub fn new(cb: Box<FnMut(T)>) -> Box<WlListener<P, T>> {
+impl<T: WestonObject> WlListener<T> {
+    pub fn new(cb: Box<FnMut(T)>) -> Box<WlListener<T>> {
         let mut result = Box::new(WlListener {
             cb,
             wll: unsafe { mem::zeroed() },
-            phantom: marker::PhantomData::<P>,
         });
-        result.wll.notify = run_wl_listener::<P, T>;
+        result.wll.notify = run_wl_listener::<T>;
         result
     }
 

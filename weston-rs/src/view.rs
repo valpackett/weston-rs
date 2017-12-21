@@ -23,6 +23,8 @@ impl View {
     }
 
     prop_accessors!(ptr weston_layer_entry | layer_link);
+
+    obj_accessors!(Surface | surface = |&this| { (*this.ptr).surface });
 }
 
 impl Drop for View {

@@ -10,25 +10,34 @@ extern crate const_cstr;
 #[macro_use]
 extern crate memoffset;
 
+use std::borrow::Borrow;
 use std::os::raw::c_void;
 
-pub trait WestonObject<T> where Self: Sized {
-    fn from_ptr(ptr: *mut T) -> Self;
-    fn from_ptr_temporary(ptr: *mut T) -> Self;
-    fn ptr(&self) -> *mut T;
+pub trait WestonObject where Self: Sized {
+    type T;
+
+    fn from_ptr(ptr: *mut Self::T) -> Self;
+    fn from_ptr_temporary(ptr: *mut Self::T) -> Self;
+    fn ptr(&self) -> *mut Self::T;
 
     fn from_void_ptr(ptr: *mut c_void) -> Self {
-        Self::from_ptr(ptr as *mut T)
+        Self::from_ptr(ptr as *mut Self::T)
     }
 
     fn from_void_ptr_temporary(ptr: *mut c_void) -> Self {
-        Self::from_ptr_temporary(ptr as *mut T)
+        Self::from_ptr_temporary(ptr as *mut Self::T)
+    }
+
+    fn same_as<U>(&self, other: U) -> bool where U: Sized + Borrow<Self> {
+        self.ptr() == other.borrow().ptr()
     }
 }
 
 macro_rules! weston_object {
     ($wrap:ident << $typ:ident $($k:ident : $v:expr),*) => {
-        impl ::WestonObject<$typ> for $wrap {
+        impl ::WestonObject for $wrap {
+            type T = $typ;
+
             #[inline] fn from_ptr(ptr: *mut $typ) -> $wrap {
                 $wrap {
                     ptr,
@@ -51,7 +60,9 @@ macro_rules! weston_object {
         }
     };
     ($wrap:ident<$tvar:ident> << $typ:ident $($k:ident : $v:expr),*) => {
-        impl<$tvar> ::WestonObject<$typ> for $wrap<$tvar> {
+        impl<$tvar> ::WestonObject for $wrap<$tvar> {
+            type T = $typ;
+
             #[inline] fn from_ptr(ptr: *mut $typ) -> $wrap<$tvar> {
                 $wrap {
                     ptr,

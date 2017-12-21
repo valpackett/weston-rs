@@ -35,32 +35,31 @@ struct DesktopImpl<'a> {
 }
 
 impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
-    fn surface_added(&mut self, surface: DesktopSurface<SurfaceContext>) {
-        let mut view = surface.create_view();
+    fn surface_added(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
+        let mut view = dsurf.create_view();
         self.windows_layer.entry_insert(&mut view);
         view.set_position(0.0, -1.0);
-        surface.get_surface().damage();
+        dsurf.get_surface().damage();
         COMPOSITOR.schedule_repaint();
-        let _ = surface.set_user_data(Box::new(SurfaceContext {
+        let _ = dsurf.set_user_data(Box::new(SurfaceContext {
             view,
         }));
     }
 
-    fn surface_removed(&mut self, surface: DesktopSurface<SurfaceContext>) {
-        let mut sctx = surface.get_user_data().expect("user_data");
-        surface.unlink_view(&mut sctx.view);
+    fn surface_removed(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
+        let mut sctx = dsurf.get_user_data().expect("user_data");
+        dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
     }
 
-    fn moove(&mut self, surface: DesktopSurface<SurfaceContext>, seat: Seat, serial: u32) {
+    fn moove(&mut self, dsurf: DesktopSurface<SurfaceContext>, seat: Seat, serial: u32) {
         if let Some(pointer) = seat.get_pointer() {
             if let Some(focus) = pointer.focus() {
-                if pointer.button_count() > 0 && serial == pointer.grab_serial() {
-                    // TODO
+                if pointer.button_count() > 0 && serial == pointer.grab_serial() &&
+                    focus.surface().get_main_surface().same_as(dsurf.get_surface()) {
+                    // move grab here
                 }
             }
-        } else if let Some(touch) = seat.get_touch() {
-            // TODO
         }
     }
 }
