@@ -10,6 +10,7 @@ use libweston_sys::{
 use wayland_sys::server::wl_signal;
 use ::WestonObject;
 use ::display::Display;
+use ::launcher::Launcher;
 
 pub struct Compositor {
     ptr: *mut weston_compositor,
@@ -27,6 +28,25 @@ impl Compositor {
         let mut result = Compositor::from_ptr(ptr);
         unsafe { (*result.ptr).user_data = &mut result as *mut _ as *mut libc::c_void };
         result
+    }
+
+    pub fn temp_clone(&self) -> Compositor {
+        Compositor {
+            ptr: self.ptr,
+            temp: true,
+        }
+    }
+
+    pub fn get_display(&self) -> Display {
+        Display::from_ptr_temporary(unsafe { (*self.ptr).wl_display })
+    }
+
+    pub fn set_session_active(&self, active: bool) {
+        unsafe { (*self.ptr).session_active = active as _; }
+    }
+
+    pub fn set_launcher<T: Launcher>(&self, launcher: T) {
+        unsafe { (*self.ptr).launcher = launcher.into_weston(); }
     }
 
     pub fn set_xkb_rule_names(&self, names: Option<*mut xkb_rule_names>) {

@@ -1,2 +1,10 @@
 [workspace]
 members = ["libweston-sys", "weston-rs"]
+
+[patch.crates-io]
+libc = { path = "../../rust-lang/libc" }
+nix = { path = "../../nix-rust/nix" }
+wayland-sys = { path = "../../Smithay/wayland-rs/wayland-sys" }
+wayland-server = { path = "../../Smithay/wayland-rs/wayland-server" }
+[patch."https://github.com/rust-lang/libc"]
+libc = { path = "../../rust-lang/libc" }

@@ -12,12 +12,14 @@ repository = "https://github.com/valpackett/weston-rs"
 [dependencies]
 libweston-sys = { path = "../libweston-sys" }
 wayland-sys = { version = "0", features = ["client", "cursor", "egl", "server"] }
+wayland-server = "0"
 libc = "0.2"
 vsprintf = "1"
 const-cstr = "0"
 memoffset = "0"
 enum-primitive-derive = "0"
 num-traits = "0"
+loginw = { path = "../../loginw" }
 
 [dev-dependencies]
 lazy_static = "1"

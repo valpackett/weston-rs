@@ -3,13 +3,6 @@ use std::os::raw::c_void;
 use wayland_sys::server::{signal, wl_signal, wl_listener};
 use ::WestonObject;
 
-#[macro_export]
-macro_rules! wl_container_of {
-    ($ptr:expr, $type:ty, $member:ident) => {{
-        ($ptr as *mut u8).offset(-1 * offset_of!($type, $member) as isize) as *mut $type
-    }}
-}
-
 pub struct WlListener<T: WestonObject> {
     cb: Box<FnMut(T)>,
     wll: wl_listener,

@@ -1,5 +1,6 @@
 pub extern crate libweston_sys;
 pub extern crate wayland_sys;
+pub extern crate wayland_server;
 pub extern crate libc;
 pub extern crate vsprintf;
 #[macro_use]
@@ -9,6 +10,7 @@ extern crate num_traits;
 extern crate const_cstr;
 #[macro_use]
 extern crate memoffset;
+extern crate loginw;
 
 use std::borrow::Borrow;
 use std::os::raw::c_void;
@@ -122,9 +124,18 @@ macro_rules! obj_accessors {
     }
 }
 
+#[macro_export]
+macro_rules! wl_container_of {
+    ($ptr:expr, $type:ty, $member:ident) => {{
+        ($ptr as *mut u8).offset(-1 * offset_of!($type, $member) as isize) as *mut $type
+    }}
+}
+
 pub mod listener;
 pub mod display;
 pub mod compositor;
+pub mod launcher;
+pub mod launcher_loginw;
 pub mod backend;
 pub mod output_api;
 pub mod output;
@@ -140,6 +151,8 @@ pub use memoffset::*;
 pub use listener::*;
 pub use display::*;
 pub use compositor::*;
+pub use launcher::*;
+pub use launcher_loginw::*;
 pub use backend::*;
 pub use output_api::*;
 pub use output::*;

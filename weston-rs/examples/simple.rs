@@ -67,16 +67,31 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
     COMPOSITOR.set_xkb_rule_names(None); // defaults to environment variables
-    let _backend = WaylandBackend::new(&*COMPOSITOR);
-    let output_api = WindowedOutput::new(&*COMPOSITOR);
-    output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
-    WlListener::new(Box::new(move |ou: Output| {
-        ou.set_scale(1);
-        ou.set_extra_scale(1.0);
-        ou.set_transform(0);
-        output_api.output_set_size(&ou, 1280, 720);
-        ou.enable();
-    })).signal_add(COMPOSITOR.output_pending_signal());
+    if env::var("LOGINW_FD").is_ok() {
+        let launcher = LoginwLauncher::connect(&*COMPOSITOR, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
+        COMPOSITOR.set_launcher(launcher);
+        let _backend = DrmBackend::new(&*COMPOSITOR, 0);
+        let output_api = DrmOutput::new(&*COMPOSITOR);
+        WlListener::new(Box::new(move |ou: Output| {
+            output_api.set_mode(&ou, DrmBackendOutputMode::Current, None);
+            ou.set_scale(1);
+            ou.set_extra_scale(1.0);
+            ou.set_transform(0);
+            output_api.set_gbm_format(&ou, None);
+            ou.enable();
+        })).signal_add(COMPOSITOR.output_pending_signal());
+    } else {
+        let _backend = WaylandBackend::new(&*COMPOSITOR);
+        let output_api = WindowedOutput::new(&*COMPOSITOR);
+        output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
+        WlListener::new(Box::new(move |ou: Output| {
+            ou.set_scale(1);
+            ou.set_extra_scale(1.0);
+            ou.set_transform(0);
+            output_api.output_set_size(&ou, 1280, 720);
+            ou.enable();
+        })).signal_add(COMPOSITOR.output_pending_signal());
+    }
     COMPOSITOR.pending_output_coldplug();
 
     let mut bg_layer = Layer::new(&*COMPOSITOR);
