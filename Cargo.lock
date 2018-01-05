@@ -592,6 +592,7 @@ dependencies = [
 name = "weston-rs"
 version = "0.0.0"
 dependencies = [
+ "bitflags 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "const-cstr 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum-primitive-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -19,6 +19,7 @@ const-cstr = "0"
 memoffset = "0"
 enum-primitive-derive = "0"
 num-traits = "0"
+bitflags = "1"
 loginw = { path = "../../loginw" }
 
 [dev-dependencies]

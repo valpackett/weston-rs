@@ -32,7 +32,6 @@ pub trait Launcher where Self: Sized {
             restore: Some(run_restore::<Self>),
             get_vt: Some(run_get_vt::<Self>),
         });
-        //let iface_ptr = mem::transmute::<*const launcher_interface, *mut launcher_interface>(wrapper.base.iface);
         wrapper.base.iface = Box::into_raw(iface);
         let raw = Box::into_raw(wrapper);
         &mut (*raw).base

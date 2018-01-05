@@ -10,6 +10,8 @@ extern crate num_traits;
 extern crate const_cstr;
 #[macro_use]
 extern crate memoffset;
+#[macro_use]
+extern crate bitflags;
 extern crate loginw;
 
 use std::borrow::Borrow;
@@ -141,6 +143,7 @@ pub mod output_api;
 pub mod output;
 pub mod seat;
 pub mod pointer;
+pub mod keyboard;
 pub mod touch;
 pub mod layer;
 pub mod surface;
@@ -158,6 +161,7 @@ pub use output_api::*;
 pub use output::*;
 pub use seat::*;
 pub use pointer::*;
+pub use keyboard::*;
 pub use touch::*;
 pub use layer::*;
 pub use surface::*;
