@@ -89,8 +89,7 @@ macro_rules! weston_object {
                 self.ptr
             }
         }
-    }
-
+    };
 }
 
 macro_rules! prop_accessors {

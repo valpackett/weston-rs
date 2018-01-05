@@ -71,7 +71,7 @@ fn main() {
         let launcher = LoginwLauncher::connect(&*COMPOSITOR, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
         COMPOSITOR.set_launcher(launcher);
         let _backend = DrmBackend::new(&*COMPOSITOR, 0);
-        let output_api = DrmOutput::new(&*COMPOSITOR);
+        let output_api = COMPOSITOR.get_drm_output().expect("get_drm_output");
         WlListener::new(Box::new(move |ou: Output| {
             output_api.set_mode(&ou, DrmBackendOutputMode::Current, None);
             ou.set_scale(1);
@@ -82,7 +82,7 @@ fn main() {
         })).signal_add(COMPOSITOR.output_pending_signal());
     } else {
         let _backend = WaylandBackend::new(&*COMPOSITOR);
-        let output_api = WindowedOutput::new(&*COMPOSITOR);
+        let output_api = COMPOSITOR.get_windowed_output().expect("get_windowed_output");
         output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
         WlListener::new(Box::new(move |ou: Output| {
             ou.set_scale(1);
