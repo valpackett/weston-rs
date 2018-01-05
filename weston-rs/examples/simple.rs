@@ -95,7 +95,7 @@ fn main() {
     COMPOSITOR.pending_output_coldplug();
 
     let mut bg_layer = Layer::new(&*COMPOSITOR);
-    bg_layer.set_position(LayerPosition::Background);
+    bg_layer.set_position(POSITION_BACKGROUND);
     let bg_surf = Surface::new(&*COMPOSITOR);
     bg_surf.set_size(8096, 8096);
     bg_surf.set_color(0.1, 0.3, 0.6, 1.0);
@@ -103,7 +103,7 @@ fn main() {
     bg_layer.entry_insert(&mut bg_view);
 
     let mut windows_layer = Layer::new(&*COMPOSITOR);
-    windows_layer.set_position(LayerPosition::Normal);
+    windows_layer.set_position(POSITION_NORMAL);
 
     let desktop_impl = Box::new(DesktopImpl {
         windows_layer

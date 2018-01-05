@@ -18,20 +18,22 @@ use ::WestonObject;
 use ::compositor::Compositor;
 use ::view::View;
 
-#[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq, Primitive)]
-pub enum LayerPosition {
-    Hidden = weston_layer_position_WESTON_LAYER_POSITION_HIDDEN,
-    Background = weston_layer_position_WESTON_LAYER_POSITION_BACKGROUND,
-    BottomUi = weston_layer_position_WESTON_LAYER_POSITION_BOTTOM_UI,
-    Normal = weston_layer_position_WESTON_LAYER_POSITION_NORMAL,
-    Ui = weston_layer_position_WESTON_LAYER_POSITION_UI,
-    Fullscreen = weston_layer_position_WESTON_LAYER_POSITION_FULLSCREEN,
-    TopUi = weston_layer_position_WESTON_LAYER_POSITION_TOP_UI,
-    Lock = weston_layer_position_WESTON_LAYER_POSITION_LOCK,
-    Cursor = weston_layer_position_WESTON_LAYER_POSITION_CURSOR,
-    Fade = weston_layer_position_WESTON_LAYER_POSITION_FADE,
-}
+/// Layer order (higher value means higher in the stack).
+///
+/// Values based on well-known concepts in a classic desktop environment are provided in this
+/// module, but you don't have to use them.
+pub type LayerPosition = u32;
+
+pub const POSITION_HIDDEN: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_HIDDEN;
+pub const POSITION_BACKGROUND: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_BACKGROUND;
+pub const POSITION_BOTTOM_UI: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_BOTTOM_UI;
+pub const POSITION_NORMAL: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_NORMAL;
+pub const POSITION_UI: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_UI;
+pub const POSITION_FULLSCREEN: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_FULLSCREEN;
+pub const POSITION_TOP_UI: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_TOP_UI;
+pub const POSITION_LOCK: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_LOCK;
+pub const POSITION_CURSOR: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_CURSOR;
+pub const POSITION_FADE: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_FADE;
 
 pub struct Layer<'comp> {
     layer: Box<weston_layer>,
