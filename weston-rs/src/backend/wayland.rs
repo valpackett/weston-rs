@@ -8,34 +8,52 @@ use ::WestonObject;
 use ::compositor::Compositor;
 use super::Backend;
 
-pub struct WaylandBackend<'comp> {
-    id: libc::c_int,
-    _cursor_theme: ffi::CString,
-    phantom: marker::PhantomData<&'comp Compositor>,
+#[derive(Builder)]
+pub struct WaylandBackendConfig {
+    #[builder(default)]
+    use_pixman: bool,
+    #[builder(default)]
+    sprawl: bool,
+    #[builder(default)]
+    display_name: Option<String>,
+    #[builder(default)]
+    fullscreen: bool,
+    #[builder(default = "\"default\".into()")]
+    cursor_theme: String,
+    #[builder(default = "16")]
+    cursor_size: libc::c_int,
 }
 
-impl<'comp> WaylandBackend<'comp> {
-    pub fn new(compositor: &Compositor) -> WaylandBackend {
-        let cursor_theme = ffi::CString::new("default").unwrap();
-        // conf will get memcpy'd by libweston
-        let mut conf = weston_wayland_backend_config {
+impl Into<weston_wayland_backend_config> for WaylandBackendConfig {
+    fn into(self) -> weston_wayland_backend_config {
+        let WaylandBackendConfig { use_pixman, sprawl, display_name, fullscreen, cursor_theme, cursor_size } = self;
+        weston_wayland_backend_config {
             base: weston_backend_config {
                 struct_version: 2,
                 struct_size: mem::size_of::<weston_wayland_backend_config>(),
             },
-            use_pixman: false,
-            sprawl: false,
-            display_name: ptr::null_mut(),
-            fullscreen: false,
-            cursor_theme: cursor_theme.as_ptr() as *mut _,
-            cursor_size: 16,
-        };
-        let id = unsafe { weston_wayland_backend_init(
-                compositor.ptr(),
-                &mut conf.base as *mut _) };
+            use_pixman,
+            sprawl,
+            display_name: display_name.map(|s| ffi::CString::new(s).expect("CString::new").into_raw()).unwrap_or(ptr::null_mut()),
+            fullscreen,
+            cursor_theme: ffi::CString::new(cursor_theme).expect("CString::new").into_raw(),
+            cursor_size,
+        }
+    }
+}
+
+pub struct WaylandBackend<'comp> {
+    id: libc::c_int,
+    phantom: marker::PhantomData<&'comp Compositor>,
+}
+
+impl<'comp> WaylandBackend<'comp> {
+    pub fn new(compositor: &Compositor, config: WaylandBackendConfig) -> WaylandBackend {
+        // conf will get memcpy'd by libweston
+        let mut config: weston_wayland_backend_config = config.into();
+        let id = unsafe { weston_wayland_backend_init(compositor.ptr(), &mut config.base as *mut _) };
         WaylandBackend {
             id,
-            _cursor_theme: cursor_theme,
             phantom: marker::PhantomData,
         }
     }
