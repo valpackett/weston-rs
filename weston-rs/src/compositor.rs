@@ -10,6 +10,7 @@ use libweston_sys::{
 use wayland_sys::server::wl_signal;
 use ::WestonObject;
 use ::display::Display;
+use ::layer::Layer;
 use ::launcher::Launcher;
 
 pub struct Compositor {
@@ -69,6 +70,9 @@ impl Compositor {
         unsafe { weston_compositor_shutdown(self.ptr); }
     }
 
+    obj_accessors!(Layer |
+                   fade_layer = |&this| { &mut (*this.ptr).fade_layer },
+                   cursor_layer = |&this| { &mut (*this.ptr).cursor_layer });
     prop_accessors!(
         ptr wl_signal | destroy_signal, create_surface_signal, activate_signal, transform_signal,
         kill_signal, idle_signal, wake_signal, show_input_panel_signal, hide_input_panel_signal,

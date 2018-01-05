@@ -31,7 +31,6 @@ pub trait DrmOutput {
 
 pub struct DrmOutputImpl<'comp> {
     ptr: *mut weston_drm_output_api,
-    temp: bool,
     phantom: marker::PhantomData<&'comp Compositor>,
 }
 
@@ -56,17 +55,12 @@ impl<'comp> WestonObject for DrmOutputImpl<'comp> {
     type T = weston_drm_output_api;
 
     fn from_ptr(ptr: *mut Self::T) -> Self {
-        DrmOutputImpl {
-            ptr,
-            temp: false,
-            phantom: marker::PhantomData,
-        }
+        Self::from_ptr_temporary(ptr)
     }
 
     fn from_ptr_temporary(ptr: *mut Self::T) -> Self {
         DrmOutputImpl {
             ptr,
-            temp: true,
             phantom: marker::PhantomData,
         }
     }
