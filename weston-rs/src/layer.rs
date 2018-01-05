@@ -61,7 +61,7 @@ impl<'comp> WestonObject for Layer<'comp> {
 
 impl<'comp> Layer<'comp> {
     pub fn new(compositor: &'comp Compositor) -> Layer<'comp> {
-        let mut result = Layer {
+        let result = Layer {
             ptr: Box::into_raw(Box::new(unsafe { mem::zeroed() })),
             phantom: marker::PhantomData,
         };
