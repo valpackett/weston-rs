@@ -1,10 +1,19 @@
 use libc;
-use std::{ptr, marker};
+use std::{ptr, ffi, marker};
 use libweston_sys::{
     weston_desktop_surface,
     weston_desktop_surface_get_user_data, weston_desktop_surface_set_user_data,
-    weston_desktop_surface_get_surface,
+    weston_desktop_surface_get_client, weston_desktop_surface_get_surface,
+    weston_desktop_surface_get_title, weston_desktop_surface_get_app_id,
+    weston_desktop_surface_get_pid, weston_desktop_surface_get_activated,
+    weston_desktop_surface_get_maximized, weston_desktop_surface_get_fullscreen,
+    weston_desktop_surface_get_resizing, weston_desktop_surface_get_geometry,
+    weston_desktop_surface_get_max_size, weston_desktop_surface_get_min_size,
     weston_desktop_surface_create_view, weston_desktop_surface_unlink_view,
+    weston_desktop_surface_propagate_layer, weston_desktop_surface_set_activated,
+    weston_desktop_surface_set_fullscreen, weston_desktop_surface_set_maximized,
+    weston_desktop_surface_set_resizing, weston_desktop_surface_set_size,
+    weston_desktop_surface_close,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_NONE,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM,
@@ -15,9 +24,10 @@ use libweston_sys::{
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_RIGHT,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT
 };
-use ::WestonObject;
+use ::{WestonObject, Geometry, Size};
 use ::surface::Surface;
 use ::view::View;
+use super::client::DesktopClient;
 
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Primitive)]
@@ -43,6 +53,9 @@ pub struct DesktopSurface<T> {
 weston_object!(DesktopSurface<T> << weston_desktop_surface);
 
 impl<T> DesktopSurface<T> {
+    obj_accessors!(DesktopClient | get_client = |&this| { weston_desktop_surface_get_client(this.ptr) });
+    obj_accessors!(Surface | get_surface = |&this| { weston_desktop_surface_get_surface(this.ptr) });
+
     pub fn temp_clone(&self) -> DesktopSurface<T> {
         DesktopSurface {
             ptr: self.ptr,
@@ -79,13 +92,79 @@ impl<T> DesktopSurface<T> {
         }
     }
 
-    obj_accessors!(Surface | get_surface = |&this| { weston_desktop_surface_get_surface(this.ptr) });
-
     pub fn create_view(&self) -> View {
         View::from_ptr(unsafe { weston_desktop_surface_create_view(self.ptr) })
     }
 
     pub fn unlink_view(&self, view: &mut View) {
         unsafe { weston_desktop_surface_unlink_view(view.ptr()); }
+    }
+
+    pub fn propagate_layer(&self) {
+        unsafe { weston_desktop_surface_propagate_layer(self.ptr); }
+    }
+
+    pub fn set_activated(&self, activated: bool) {
+        unsafe { weston_desktop_surface_set_activated(self.ptr, activated); }
+    }
+
+    pub fn set_fullscreen(&self, fullscreen: bool) {
+        unsafe { weston_desktop_surface_set_fullscreen(self.ptr, fullscreen); }
+    }
+
+    pub fn set_maximized(&self, maximized: bool) {
+        unsafe { weston_desktop_surface_set_maximized(self.ptr, maximized); }
+    }
+
+    pub fn set_resizing(&self, resizing: bool) {
+        unsafe { weston_desktop_surface_set_resizing(self.ptr, resizing); }
+    }
+
+    pub fn set_size(&self, width: i32, height: i32) {
+        unsafe { weston_desktop_surface_set_size(self.ptr, width, height); }
+    }
+
+    pub fn close(&self) {
+        unsafe { weston_desktop_surface_close(self.ptr); }
+    }
+
+    pub fn get_title(&self) -> &ffi::CStr {
+        unsafe { ffi::CStr::from_ptr(weston_desktop_surface_get_title(self.ptr)) }
+    }
+
+    pub fn get_app_id(&self) -> &ffi::CStr {
+        unsafe { ffi::CStr::from_ptr(weston_desktop_surface_get_app_id(self.ptr)) }
+    }
+
+    pub fn get_pid(&self) -> libc::pid_t {
+        unsafe { weston_desktop_surface_get_pid(self.ptr) }
+    }
+
+    pub fn get_activated(&self) -> bool {
+        unsafe { weston_desktop_surface_get_activated(self.ptr) }
+    }
+
+    pub fn get_maximized(&self) -> bool {
+        unsafe { weston_desktop_surface_get_maximized(self.ptr) }
+    }
+
+    pub fn get_fullscreen(&self) -> bool {
+        unsafe { weston_desktop_surface_get_fullscreen(self.ptr) }
+    }
+
+    pub fn get_resizing(&self) -> bool {
+        unsafe { weston_desktop_surface_get_resizing(self.ptr) }
+    }
+
+    pub fn get_geometry(&self) -> Geometry {
+        unsafe { weston_desktop_surface_get_geometry(self.ptr) }
+    }
+
+    pub fn get_max_size(&self) -> Size {
+        unsafe { weston_desktop_surface_get_max_size(self.ptr) }
+    }
+
+    pub fn get_min_size(&self) -> Size {
+        unsafe { weston_desktop_surface_get_min_size(self.ptr) }
     }
 }
