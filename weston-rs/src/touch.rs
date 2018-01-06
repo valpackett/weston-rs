@@ -43,31 +43,31 @@ struct TouchGrabWrapper<T: TouchGrab> {
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_down<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
+extern "C" fn run_down<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
     wrapper.user.down(&mut Touch::from_ptr_temporary(unsafe { (*grab).touch }), unsafe { &*time }, touch_id, sx, sy);
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_up<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int) {
+extern "C" fn run_up<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
     wrapper.user.up(&mut Touch::from_ptr_temporary(unsafe { (*grab).touch }), unsafe { &*time }, touch_id);
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_motion<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
+extern "C" fn run_motion<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
     wrapper.user.motion(&mut Touch::from_ptr_temporary(unsafe { (*grab).touch }), unsafe { &*time }, touch_id, sx, sy);
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_frame<T: TouchGrab>(grab: *mut weston_touch_grab) {
+extern "C" fn run_frame<T: TouchGrab>(grab: *mut weston_touch_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
     wrapper.user.frame(&mut Touch::from_ptr_temporary(unsafe { (*grab).touch }));
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_cancel<T: TouchGrab>(grab: *mut weston_touch_grab) {
+extern "C" fn run_cancel<T: TouchGrab>(grab: *mut weston_touch_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
     wrapper.user.cancel(&mut Touch::from_ptr_temporary(unsafe { (*grab).touch }));
 }

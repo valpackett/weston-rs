@@ -121,13 +121,13 @@ struct PointerGrabWrapper<T: PointerGrab> {
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_focus<T: PointerGrab>(grab: *mut weston_pointer_grab) {
+extern "C" fn run_focus<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.focus(&mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }));
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_motion<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, event: *mut weston_pointer_motion_event) {
+extern "C" fn run_motion<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, event: *mut weston_pointer_motion_event) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.motion(
         &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
@@ -137,7 +137,7 @@ pub extern "C" fn run_motion<T: PointerGrab>(grab: *mut weston_pointer_grab, tim
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_button<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, button: u32, state: u32) {
+extern "C" fn run_button<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, button: u32, state: u32) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.button(
         &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
@@ -148,7 +148,7 @@ pub extern "C" fn run_button<T: PointerGrab>(grab: *mut weston_pointer_grab, tim
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_axis<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, event: *mut weston_pointer_axis_event) {
+extern "C" fn run_axis<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, event: *mut weston_pointer_axis_event) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.axis(
         &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
@@ -158,7 +158,7 @@ pub extern "C" fn run_axis<T: PointerGrab>(grab: *mut weston_pointer_grab, time:
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_axis_source<T: PointerGrab>(grab: *mut weston_pointer_grab, source: u32) {
+extern "C" fn run_axis_source<T: PointerGrab>(grab: *mut weston_pointer_grab, source: u32) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.axis_source(
         &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
@@ -167,13 +167,13 @@ pub extern "C" fn run_axis_source<T: PointerGrab>(grab: *mut weston_pointer_grab
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_frame<T: PointerGrab>(grab: *mut weston_pointer_grab) {
+extern "C" fn run_frame<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.frame(&mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }));
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_cancel<T: PointerGrab>(grab: *mut weston_pointer_grab) {
+extern "C" fn run_cancel<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.cancel(&mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }));
 }

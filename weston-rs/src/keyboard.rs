@@ -77,7 +77,7 @@ struct KeyboardGrabWrapper<T: KeyboardGrab> {
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_key<T: KeyboardGrab>(grab: *mut weston_keyboard_grab, time: *const libc::timespec, key: u32, state: u32) {
+extern "C" fn run_key<T: KeyboardGrab>(grab: *mut weston_keyboard_grab, time: *const libc::timespec, key: u32, state: u32) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), KeyboardGrabWrapper<T>, base) };
     wrapper.user.key(
         &mut Keyboard::from_ptr_temporary(unsafe { (*grab).keyboard }),
@@ -88,7 +88,7 @@ pub extern "C" fn run_key<T: KeyboardGrab>(grab: *mut weston_keyboard_grab, time
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_modifiers<T: KeyboardGrab>(grab: *mut weston_keyboard_grab, serial: u32,
+extern "C" fn run_modifiers<T: KeyboardGrab>(grab: *mut weston_keyboard_grab, serial: u32,
                                                  mods_depressed: u32, mods_latched: u32, mods_locked: u32, group: u32) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), KeyboardGrabWrapper<T>, base) };
     wrapper.user.modifiers(
@@ -102,7 +102,7 @@ pub extern "C" fn run_modifiers<T: KeyboardGrab>(grab: *mut weston_keyboard_grab
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_cancel<T: KeyboardGrab>(grab: *mut weston_keyboard_grab) {
+extern "C" fn run_cancel<T: KeyboardGrab>(grab: *mut weston_keyboard_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), KeyboardGrabWrapper<T>, base) };
     wrapper.user.cancel(&mut Keyboard::from_ptr_temporary(unsafe { (*grab).keyboard }));
 }

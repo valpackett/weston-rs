@@ -45,7 +45,7 @@ struct LauncherWrapper<T: Launcher> {
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_connect<T: Launcher>(
+extern "C" fn run_connect<T: Launcher>(
     launcher_out: *mut *mut weston_launcher,
     compositor: *mut weston_compositor,
     tty: libc::c_int,
@@ -60,7 +60,7 @@ pub extern "C" fn run_connect<T: Launcher>(
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_destroy<T: Launcher>(launcher: *mut weston_launcher) {
+extern "C" fn run_destroy<T: Launcher>(launcher: *mut weston_launcher) {
     let wrapper = unsafe { Box::from_raw(wl_container_of!(launcher, LauncherWrapper<T>, base)) };
     unsafe {
         let iface_ptr = mem::transmute::<*const launcher_interface, *mut launcher_interface>(wrapper.base.iface);
@@ -69,31 +69,31 @@ pub extern "C" fn run_destroy<T: Launcher>(launcher: *mut weston_launcher) {
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_open<T: Launcher>(launcher: *mut weston_launcher, path: *const libc::c_char, flags: libc::c_int) -> libc::c_int {
+extern "C" fn run_open<T: Launcher>(launcher: *mut weston_launcher, path: *const libc::c_char, flags: libc::c_int) -> libc::c_int {
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.open(unsafe { CStr::from_ptr(path) }, flags)
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_close<T: Launcher>(launcher: *mut weston_launcher, fd: libc::c_int) {
+extern "C" fn run_close<T: Launcher>(launcher: *mut weston_launcher, fd: libc::c_int) {
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.close(fd);
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_activate_vt<T: Launcher>(launcher: *mut weston_launcher, vt: libc::c_int) -> libc::c_int {
+extern "C" fn run_activate_vt<T: Launcher>(launcher: *mut weston_launcher, vt: libc::c_int) -> libc::c_int {
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.activate_vt(vt) as libc::c_int
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_restore<T: Launcher>(launcher: *mut weston_launcher) {
+extern "C" fn run_restore<T: Launcher>(launcher: *mut weston_launcher) {
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.restore();
 }
 
 #[allow(unused_unsafe)]
-pub extern "C" fn run_get_vt<T: Launcher>(launcher: *mut weston_launcher) -> libc::c_int {
+extern "C" fn run_get_vt<T: Launcher>(launcher: *mut weston_launcher) -> libc::c_int {
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.get_vt()
 }
