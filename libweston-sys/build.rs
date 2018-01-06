@@ -171,6 +171,7 @@ fn main() {
         .header("wrapper.h")
         .blacklist_type("timespec")
         .blacklist_type(r"^libinput_.*$")
+        .blacklist_type(r"^xkb_.*$")
         .blacklist_type(r"^wl_.*$")
         .whitelist_type(r"^weston_.*$")
         .whitelist_function(r"^weston_.*$")

@@ -2,6 +2,7 @@ pub extern crate libweston_sys;
 pub extern crate wayland_sys;
 pub extern crate wayland_server;
 pub extern crate input_sys;
+pub extern crate xkbcommon;
 pub extern crate libc;
 pub extern crate vsprintf;
 #[macro_use]

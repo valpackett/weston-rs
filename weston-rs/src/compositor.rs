@@ -3,10 +3,12 @@ use libc;
 use libweston_sys::{
     weston_compositor, weston_compositor_create, weston_compositor_destroy,
     weston_compositor_shutdown,
-    weston_compositor_set_xkb_rule_names, xkb_rule_names,
+    weston_compositor_set_xkb_rule_names,
     weston_compositor_wake, weston_compositor_schedule_repaint,
     weston_pending_output_coldplug
 };
+use xkbcommon::xkb;
+use xkbcommon::xkb::ffi::{xkb_rule_names, xkb_context_ref};
 use wayland_sys::server::wl_signal;
 use ::WestonObject;
 use ::display::Display;
@@ -48,6 +50,10 @@ impl Compositor {
 
     pub fn set_launcher<T: Launcher>(&self, launcher: T) {
         unsafe { (*self.ptr).launcher = launcher.into_weston(); }
+    }
+
+    pub fn get_xkb_context(&self) -> xkb::Context {
+        unsafe { xkb::Context::from_raw_ptr(xkb_context_ref((*self.ptr).xkb_context)) }
     }
 
     pub fn set_xkb_rule_names(&self, names: Option<*mut xkb_rule_names>) {

@@ -5,6 +5,7 @@
 extern crate libc;
 extern crate wayland_sys;
 extern crate input_sys;
+extern crate xkbcommon;
 
 use libc::timespec;
 use wayland_sys::common::*;
@@ -14,6 +15,7 @@ use wayland_sys::server::*;
 // use wayland_sys::cursor::*;
 // use wayland_sys::egl::*;
 use input_sys::libinput_device;
+use xkbcommon::xkb::ffi::*;
 
 // these got blacklisted by the wl_.* regex and whitelist doesn't override :(
 pub type wl_data_device_manager_dnd_action = libc::c_uint;

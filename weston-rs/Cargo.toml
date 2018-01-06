@@ -13,6 +13,7 @@ repository = "https://github.com/valpackett/weston-rs"
 libweston-sys = { path = "../libweston-sys" }
 wayland-sys = { version = "0", features = ["client", "cursor", "egl", "server"] }
 wayland-server = "0"
+xkbcommon = { version = "0.2", features = ["compose"] }
 input-sys = "1"
 libc = "0.2"
 vsprintf = "1"
