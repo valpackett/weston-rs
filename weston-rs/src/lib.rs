@@ -23,6 +23,11 @@ pub use wayland_sys::common::{
 use std::borrow::Borrow;
 use std::os::raw::c_void;
 
+// These don't need any wrapping, they're just bundles of i32 fields
+pub type Geometry = libweston_sys::weston_geometry;
+pub type Position = libweston_sys::weston_position;
+pub type Size = libweston_sys::weston_size;
+
 pub trait WestonObject where Self: Sized {
     type T;
 
@@ -138,6 +143,7 @@ macro_rules! wl_container_of {
     }}
 }
 
+pub mod matrix;
 pub mod listener;
 pub mod display;
 pub mod compositor;
@@ -156,6 +162,7 @@ pub mod view;
 pub mod desktop;
 
 pub use memoffset::*;
+pub use matrix::*;
 pub use listener::*;
 pub use display::*;
 pub use compositor::*;
