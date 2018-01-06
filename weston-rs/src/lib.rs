@@ -17,6 +17,9 @@ extern crate bitflags;
 extern crate derive_builder;
 extern crate loginw;
 
+pub use wayland_sys::common::{
+    wl_fixed_from_int, wl_fixed_to_int, wl_fixed_to_double, wl_fixed_from_double
+};
 use std::borrow::Borrow;
 use std::os::raw::c_void;
 

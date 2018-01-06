@@ -43,6 +43,14 @@ pub struct DesktopSurface<T> {
 weston_object!(DesktopSurface<T> << weston_desktop_surface);
 
 impl<T> DesktopSurface<T> {
+    pub fn temp_clone(&self) -> DesktopSurface<T> {
+        DesktopSurface {
+            ptr: self.ptr,
+            temp: true,
+            phantom: marker::PhantomData::<T>,
+        }
+    }
+
     pub fn set_user_data(&self, data: Box<T>) -> Option<Box<T>> {
         let prev = self.get_user_data();
         unsafe { weston_desktop_surface_set_user_data(self.ptr, Box::into_raw(data) as *mut libc::c_void); }

@@ -1,6 +1,6 @@
 //! This is a very simple compositor, like
 //! https://github.com/sardemff7/not-a-wm/blob/master/main.c
-//! but in Rust.
+//! but in Rust and with a little bit more stuff (e.g. window movement)
 
 extern crate libc;
 #[macro_use]
@@ -23,6 +23,33 @@ weston_logger!{fn wlog(msg: &str) {
 weston_logger!{fn wlog_continue(msg: &str) {
     eprint!("{}", msg);
 }}
+
+/// Mouse handler for moving windows
+struct MoveGrab {
+    dsurf: DesktopSurface<SurfaceContext>,
+    dx: f64,
+    dy: f64,
+}
+
+impl PointerGrab for MoveGrab {
+    fn motion(&mut self, pointer: &mut Pointer, _time: &libc::timespec, event: PointerMotionEvent) {
+        pointer.moove(event);
+        let sctx = self.dsurf.borrow_user_data().expect("user_data");
+        sctx.view.set_position((wl_fixed_to_double(pointer.x()) + self.dx) as f32, (wl_fixed_to_double(pointer.y()) + self.dy) as f32);
+        self.dsurf.get_surface().compositor().schedule_repaint();
+    }
+
+    fn button(&mut self, pointer: &mut Pointer, _time: &libc::timespec, _button: u32, state: ButtonState) {
+        if pointer.button_count() == 0 && state == ButtonState::Released {
+            pointer.end_grab();
+        }
+    }
+
+    fn cancel(&mut self, pointer: &mut Pointer) {
+        pointer.end_grab();
+    }
+}
+
 
 /// Per-surface user data for Desktop Surfaces (libweston-desktop's wrapper around surfaces)
 struct SurfaceContext {
@@ -53,11 +80,18 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
     }
 
     fn moove(&mut self, dsurf: DesktopSurface<SurfaceContext>, seat: Seat, serial: u32) {
+        let sctx = dsurf.borrow_user_data().expect("user_data");
         if let Some(pointer) = seat.get_pointer() {
             if let Some(focus) = pointer.focus() {
                 if pointer.button_count() > 0 && serial == pointer.grab_serial() &&
                     focus.surface().get_main_surface().same_as(dsurf.get_surface()) {
-                    // move grab here
+                    let (view_x, view_y) = sctx.view.get_position();
+                    let grab = MoveGrab {
+                        dsurf: dsurf.temp_clone(),
+                        dx: view_x as f64 - wl_fixed_to_double(pointer.grab_x()),
+                        dy: view_y as f64 - wl_fixed_to_double(pointer.grab_y()),
+                    };
+                    pointer.start_grab(grab);
                 }
             }
         }

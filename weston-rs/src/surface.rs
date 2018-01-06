@@ -64,6 +64,7 @@ impl Surface {
 
     obj_accessors!(Surface | get_main_surface = |&this| { weston_surface_get_main_surface(this.ptr) });
     obj_accessors!(Output | output = |&this| { (*this.ptr).output });
+    obj_accessors!(Compositor | compositor = |&this| { (*this.ptr).compositor });
     prop_accessors!(u32 | output_mask);
     prop_accessors!(ptr wl_signal | destroy_signal, commit_signal);
 }

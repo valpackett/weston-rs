@@ -30,6 +30,10 @@ impl View {
         View::from_ptr(unsafe { weston_view_create(surface.ptr()) })
     }
 
+    pub fn get_position(&self) -> (f32, f32) {
+        unsafe { ((*self.ptr).geometry.x, (*self.ptr).geometry.y) }
+    }
+
     pub fn set_position(&self, x: f32, y: f32) {
         unsafe { weston_view_set_position(self.ptr, x, y); }
     }
