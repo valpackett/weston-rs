@@ -32,6 +32,6 @@ impl DesktopClient {
 
 #[allow(unused_unsafe)]
 extern "C" fn run_callback<SC, T: FnMut(DesktopSurface<SC>)>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let cb_wrapper = unsafe { &mut *(user_data as *mut T) };
-    cb_wrapper(DesktopSurface::from_ptr_temporary(surface));
+    let cb = unsafe { &mut *(user_data as *mut T) };
+    cb(DesktopSurface::from_ptr_temporary(surface));
 }

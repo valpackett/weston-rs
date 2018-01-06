@@ -1,6 +1,6 @@
 use std::{mem, marker};
 use std::os::raw::c_void;
-use wayland_sys::server::{signal, wl_signal, wl_listener};
+use wayland_sys::server::{signal, wl_signal, wl_listener, wl_list_init};
 use ::WestonObject;
 
 pub struct WlListener<T: WestonObject> {
@@ -20,6 +20,7 @@ impl<T: WestonObject> WlListener<T> {
             cb,
             wll: unsafe { mem::zeroed() },
         });
+        unsafe { wl_list_init(&mut result.wll.link); }
         result.wll.notify = run_wl_listener::<T>;
         result
     }

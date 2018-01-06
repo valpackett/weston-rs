@@ -40,6 +40,8 @@ pub struct Layer<'comp> {
     phantom: marker::PhantomData<&'comp Compositor>,
 }
 
+unsafe impl<'comp> Sync for Layer<'comp> {}
+
 impl<'comp> WestonObject for Layer<'comp> {
     type T = weston_layer;
 

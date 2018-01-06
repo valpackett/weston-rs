@@ -14,6 +14,7 @@ use libweston_sys::{
     weston_desktop_surface_set_fullscreen, weston_desktop_surface_set_maximized,
     weston_desktop_surface_set_resizing, weston_desktop_surface_set_size,
     weston_desktop_surface_close,
+    weston_surface_is_desktop_surface, weston_surface_get_desktop_surface,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_NONE,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP,
     weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM,
@@ -55,6 +56,13 @@ weston_object!(DesktopSurface<T> << weston_desktop_surface);
 impl<T> DesktopSurface<T> {
     obj_accessors!(DesktopClient | get_client = |&this| { weston_desktop_surface_get_client(this.ptr) });
     obj_accessors!(Surface | get_surface = |&this| { weston_desktop_surface_get_surface(this.ptr) });
+
+    pub fn from_surface(surface: &Surface) -> Option<DesktopSurface<T>> {
+        if unsafe { weston_surface_is_desktop_surface(surface.ptr()) } {
+            return Some(DesktopSurface::from_ptr_temporary(unsafe { weston_surface_get_desktop_surface(surface.ptr()) }))
+        }
+        None
+    }
 
     pub fn temp_clone(&self) -> DesktopSurface<T> {
         DesktopSurface {

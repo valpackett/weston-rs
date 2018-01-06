@@ -36,6 +36,11 @@ impl<'comp, SC> Desktop<'comp, SC> {
         }
     }
 
+    pub fn api(&'comp mut self) -> &'comp mut DesktopApi<SC> {
+        use std::ops::DerefMut;
+        self.api.deref_mut().deref_mut()
+    }
+
     pub fn ptr(&self) -> *mut weston_desktop {
         self.ptr
     }

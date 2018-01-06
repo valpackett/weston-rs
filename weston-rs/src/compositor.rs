@@ -5,7 +5,17 @@ use libweston_sys::{
     weston_compositor_shutdown,
     weston_compositor_set_xkb_rule_names,
     weston_compositor_wake, weston_compositor_schedule_repaint,
-    weston_pending_output_coldplug
+    weston_pending_output_coldplug,
+    weston_seat,
+    weston_binding, weston_compositor_add_key_binding,
+    weston_compositor_add_modifier_binding, weston_compositor_add_button_binding,
+    weston_compositor_add_touch_binding, weston_compositor_add_axis_binding,
+    weston_compositor_add_debug_binding, weston_install_debug_key_binding,
+    weston_compositor_run_key_binding, weston_compositor_run_modifier_binding,
+    weston_compositor_run_button_binding, weston_compositor_run_touch_binding,
+    weston_compositor_run_axis_binding, weston_compositor_run_debug_binding,
+    weston_keyboard, weston_keyboard_modifier, weston_pointer, weston_touch,
+    weston_pointer_axis_event,
 };
 use xkbcommon::xkb;
 use xkbcommon::xkb::ffi::{xkb_rule_names, xkb_context_ref};
@@ -14,6 +24,39 @@ use ::WestonObject;
 use ::display::Display;
 use ::layer::Layer;
 use ::launcher::Launcher;
+use ::seat::Seat;
+use ::pointer::{Pointer, PointerAxisEvent, Axis};
+use ::keyboard::{Keyboard, KeyboardModifier};
+use ::touch::Touch;
+
+/// Opaque reference to a key/modifier/button/touch/axis/debug binding.
+/// Hold on to it if you want to later destroy the binding.
+pub struct Binding(*mut weston_binding);
+
+extern "C" fn run_key_binding<F: FnMut(Keyboard, &libc::timespec, u32)>(keyboard: *mut weston_keyboard, time: *const libc::timespec, key: u32, data: *mut libc::c_void) {
+    let cb = unsafe { &mut *(data as *mut F) };
+    cb(Keyboard::from_ptr_temporary(keyboard), unsafe { &*time }, key);
+}
+
+extern "C" fn run_modifier_binding<F: FnMut(Keyboard, KeyboardModifier)>(keyboard: *mut weston_keyboard, modifier: weston_keyboard_modifier, data: *mut libc::c_void) {
+    let cb = unsafe { &mut *(data as *mut F) };
+    cb(Keyboard::from_ptr_temporary(keyboard), KeyboardModifier::from_bits_truncate(modifier));
+}
+
+extern "C" fn run_button_binding<F: FnMut(Pointer, &libc::timespec, u32)>(pointer: *mut weston_pointer, time: *const libc::timespec, button: u32, data: *mut libc::c_void) {
+    let cb = unsafe { &mut *(data as *mut F) };
+    cb(Pointer::from_ptr_temporary(pointer), unsafe { &*time }, button);
+}
+
+extern "C" fn run_touch_binding<F: FnMut(Touch, &libc::timespec)>(touch: *mut weston_touch, time: *const libc::timespec, data: *mut libc::c_void) {
+    let cb = unsafe { &mut *(data as *mut F) };
+    cb(Touch::from_ptr_temporary(touch), unsafe { &*time });
+}
+
+extern "C" fn run_axis_binding<F: FnMut(Pointer, &libc::timespec, PointerAxisEvent)>(pointer: *mut weston_pointer, time: *const libc::timespec, event: *mut weston_pointer_axis_event , data: *mut libc::c_void) {
+    let cb = unsafe { &mut *(data as *mut F) };
+    cb(Pointer::from_ptr_temporary(pointer), unsafe { &*time }, unsafe { &*event }.into());
+}
 
 pub struct Compositor {
     ptr: *mut weston_compositor,
@@ -76,14 +119,41 @@ impl Compositor {
         unsafe { weston_compositor_shutdown(self.ptr); }
     }
 
+    pub fn add_key_binding<'comp, F: FnMut(Keyboard, &libc::timespec, u32)>(&'comp self, key: u32, modifier: KeyboardModifier, handler: &'comp F) {
+        unsafe { weston_compositor_add_key_binding(self.ptr, key, modifier.bits(), Some(run_key_binding::<F>), handler as *const _ as *mut libc::c_void); }
+    }
+
+    pub fn add_modifier_binding<'comp, F: FnMut(Keyboard, KeyboardModifier)>(&'comp self, modifier: KeyboardModifier, handler: &'comp F) {
+        unsafe { weston_compositor_add_modifier_binding(self.ptr, modifier.bits(), Some(run_modifier_binding::<F>), handler as *const _ as *mut libc::c_void); }
+    }
+
+    pub fn add_button_binding<'comp, F: FnMut(Pointer, &libc::timespec, u32)>(&'comp self, button: u32, modifier: KeyboardModifier, handler: &'comp F) {
+        unsafe { weston_compositor_add_button_binding(self.ptr, button, modifier.bits(), Some(run_button_binding::<F>), handler as *const _ as *mut libc::c_void); }
+    }
+
+    pub fn add_touch_binding<'comp, F: FnMut(Touch, &libc::timespec)>(&'comp self, modifier: KeyboardModifier, handler: &'comp F) {
+        unsafe { weston_compositor_add_touch_binding(self.ptr, modifier.bits(), Some(run_touch_binding::<F>), handler as *const _ as *mut libc::c_void); }
+    }
+
+    pub fn add_axis_binding<'comp, F: FnMut(Pointer, &libc::timespec, PointerAxisEvent)>(&'comp self, axis: Axis, modifier: KeyboardModifier, handler: &'comp F) {
+        unsafe { weston_compositor_add_axis_binding(self.ptr, axis.to_raw(), modifier.bits(), Some(run_axis_binding::<F>), handler as *const _ as *mut libc::c_void); }
+    }
+
+    pub fn add_debug_binding<'comp, F: FnMut(Keyboard, &libc::timespec, u32)>(&'comp self, key: u32, handler: &'comp F) {
+        unsafe { weston_compositor_add_debug_binding(self.ptr, key, Some(run_key_binding::<F>), handler as *const _ as *mut libc::c_void); }
+    }
+
     obj_accessors!(Layer |
                    fade_layer = |&this| { &mut (*this.ptr).fade_layer },
                    cursor_layer = |&this| { &mut (*this.ptr).cursor_layer });
+    obj_accessors!(opt Seat |
+                   first_seat = |&this| { wl_container_of!((*this.ptr).seat_list.next, weston_seat, link) });
     prop_accessors!(
         ptr wl_signal | destroy_signal, create_surface_signal, activate_signal, transform_signal,
         kill_signal, idle_signal, wake_signal, show_input_panel_signal, hide_input_panel_signal,
         update_input_panel_signal, seat_created_signal, output_pending_signal, output_created_signal,
         output_destroyed_signal, output_moved_signal, output_resized_signal, session_signal);
+    prop_accessors!(i32 | kb_repeat_rate, kb_repeat_delay);
 }
 
 impl Drop for Compositor {

@@ -59,6 +59,7 @@ struct SurfaceContext {
 /// User data for the Desktop API implementation
 struct DesktopImpl<'a> {
     windows_layer: Layer<'a>,
+    focus_stack: Vec<DesktopSurface<SurfaceContext>>,
 }
 
 impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
@@ -71,9 +72,20 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         let _ = dsurf.set_user_data(Box::new(SurfaceContext {
             view,
         }));
+        if let Some(ref focus) = self.focus_stack.last() {
+            focus.set_activated(false);
+        }
+        self.focus_stack.push(dsurf.temp_clone());
+        dsurf.set_activated(true);
+        COMPOSITOR.first_seat().expect("first_seat").set_keyboard_focus(&dsurf.get_surface());
     }
 
     fn surface_removed(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
+        self.focus_stack = self.focus_stack.iter().filter(|s| !s.same_as(&dsurf)).map(|s| s.temp_clone()).collect();
+        if let Some(ref focus) = self.focus_stack.last() {
+            focus.set_activated(true);
+            COMPOSITOR.first_seat().expect("first_seat").set_keyboard_focus(&focus.get_surface());
+        }
         let mut sctx = dsurf.get_user_data().expect("user_data");
         dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
@@ -139,12 +151,33 @@ fn main() {
     let mut windows_layer = Layer::new(&*COMPOSITOR);
     windows_layer.set_position(POSITION_NORMAL);
 
-    let desktop_impl = Box::new(DesktopImpl {
-        windows_layer
+    let mut desktop_impl = Box::new(DesktopImpl {
+        windows_layer,
+        focus_stack: Vec::new(),
     });
 
-    // Important to keep around. `let _ = …` blows up
-    let _desktop = Desktop::new(&*COMPOSITOR, desktop_impl);
+    let desktop_impl_ptr = &mut *desktop_impl as *mut DesktopImpl; // TODO figure out safe way
+
+    // note: Important to keep around
+    let mut desktop = Desktop::new(&*COMPOSITOR, desktop_impl);
+
+    // XXX: popup windows are not handled correctly
+    let make_focused = |p: Pointer| {
+        let surf = p.focus().expect("focus").surface();
+        p.seat().set_keyboard_focus(&surf);
+        if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&surf) {
+            let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
+            if let Some(ref focus) = desktop_impl.focus_stack.last() {
+                focus.set_activated(false);
+            }
+            desktop_impl.focus_stack.push(dsurf.temp_clone());
+            dsurf.set_activated(true);
+        }
+    };
+    // Left click to focus window
+    let _ = COMPOSITOR.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| make_focused(p));
+    // Right click to focus window
+    let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| make_focused(p));
 
     env::remove_var("DISPLAY");
     let sock_name = DISPLAY.add_socket_auto();

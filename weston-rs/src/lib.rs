@@ -49,6 +49,23 @@ pub trait WestonObject where Self: Sized {
     }
 }
 
+/// For listeners without args
+impl WestonObject for () {
+    type T = ();
+
+    fn from_ptr(_ptr: *mut Self::T) -> Self {
+        ()
+    }
+
+    fn from_ptr_temporary(_ptr: *mut Self::T) -> Self {
+        ()
+    }
+
+    fn ptr(&self) -> *mut Self::T {
+        ptr::null_mut()
+    }
+}
+
 macro_rules! weston_object {
     ($wrap:ident << $typ:ident $($k:ident : $v:expr),*) => {
         impl ::WestonObject for $wrap {

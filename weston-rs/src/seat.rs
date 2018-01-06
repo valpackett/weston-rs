@@ -20,6 +20,13 @@ pub struct Seat {
 weston_object!(Seat << weston_seat);
 
 impl Seat {
+    pub fn temp_clone(&self) -> Seat {
+        Seat {
+            ptr: self.ptr,
+            temp: true,
+        }
+    }
+
     obj_accessors!(opt Pointer | get_pointer = |&this| { weston_seat_get_pointer(this.ptr) });
     obj_accessors!(opt Keyboard | get_keyboard = |&this| { weston_seat_get_keyboard(this.ptr) });
     obj_accessors!(opt Touch | get_touch = |&this| { weston_seat_get_touch(this.ptr) });
