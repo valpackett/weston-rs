@@ -9,7 +9,7 @@ use ::compositor::Compositor;
 use ::launcher::Launcher;
 
 use wayland_sys::server::signal::wl_signal_emit;
-use wayland_server::sources;
+use wayland_server::{sources, EventLoopHandle};
 use loginw::protocol::*;
 use loginw::socket::*;
 
@@ -31,7 +31,7 @@ impl Launcher for LoginwLauncher {
             compositor.get_display().get_event_loop().add_fd_event_source(
                 sock.fd,
                 sources::FdEventSourceImpl {
-                    ready: |_, &mut (ref sock, ref compositor): &mut (Socket, Compositor), fd, _| {
+                    ready: |_: &mut EventLoopHandle, &mut (ref sock, ref compositor): &mut (Socket, Compositor), fd, _| {
                         let (resp, _) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
                         match resp.typ {
                             LoginwResponseType::LoginwActivated => {
@@ -46,7 +46,7 @@ impl Launcher for LoginwLauncher {
                             },
                         }
                     },
-                    error: |_, _, fd, _| {
+                    error: |_: &mut EventLoopHandle, _, fd, _| {
                         // TODO: restore the tty
                     },
                 },
