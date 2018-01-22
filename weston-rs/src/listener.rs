@@ -15,14 +15,14 @@ extern "C" fn run_wl_listener<T: WestonObject>(listener: *mut wl_listener, data:
 }
 
 impl<T: WestonObject> WlListener<T> {
-    pub fn new(cb: Box<FnMut(T)>) -> Box<WlListener<T>> {
+    pub fn new(cb: Box<FnMut(T)>) -> mem::ManuallyDrop<Box<WlListener<T>>> {
         let mut result = Box::new(WlListener {
             cb,
             wll: unsafe { mem::zeroed() },
         });
         unsafe { wl_list_init(&mut result.wll.link); }
         result.wll.notify = run_wl_listener::<T>;
-        result
+        mem::ManuallyDrop::new(result)
     }
 
     pub fn signal_add(&mut self, signal: &mut wl_signal) {

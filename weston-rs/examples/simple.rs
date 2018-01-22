@@ -3,6 +3,7 @@
 //! but in Rust and with a little bit more stuff (e.g. window movement)
 
 extern crate libc;
+extern crate loginw;
 #[macro_use]
 extern crate weston_rs;
 #[macro_use]
@@ -10,6 +11,7 @@ extern crate lazy_static;
 
 use std::{env, ffi, process};
 use weston_rs::*;
+use loginw::priority;
 
 lazy_static! {
     static ref DISPLAY: Display = Display::new();
@@ -69,24 +71,25 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         view.set_position(0.0, -1.0);
         dsurf.get_surface().damage();
         COMPOSITOR.schedule_repaint();
-        let _ = dsurf.set_user_data(Box::new(SurfaceContext {
-            view,
-        }));
         if let Some(ref focus) = self.focus_stack.last() {
             focus.set_activated(false);
         }
         self.focus_stack.push(dsurf.temp_clone());
         dsurf.set_activated(true);
-        COMPOSITOR.first_seat().expect("first_seat").set_keyboard_focus(&dsurf.get_surface());
+        // NOTE: activate causes SIGBUS in wl_signal_emit when there's no keyboard???
+        view.activate(&COMPOSITOR.first_seat().expect("first_seat"), 0);
+        let _ = dsurf.set_user_data(Box::new(SurfaceContext {
+            view,
+        }));
     }
 
     fn surface_removed(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
         self.focus_stack = self.focus_stack.iter().filter(|s| !s.same_as(&dsurf)).map(|s| s.temp_clone()).collect();
+        let mut sctx = dsurf.get_user_data().expect("user_data");
         if let Some(ref focus) = self.focus_stack.last() {
             focus.set_activated(true);
-            COMPOSITOR.first_seat().expect("first_seat").set_keyboard_focus(&focus.get_surface());
+            sctx.view.activate(&COMPOSITOR.first_seat().expect("first_seat"), 0);
         }
-        let mut sctx = dsurf.get_user_data().expect("user_data");
         dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
     }
@@ -163,9 +166,9 @@ fn main() {
 
     // XXX: popup windows are not handled correctly
     let make_focused = |p: Pointer| {
-        let surf = p.focus().expect("focus").surface();
-        p.seat().set_keyboard_focus(&surf);
-        if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&surf) {
+        let focus = p.focus().expect("focus");
+        focus.activate(&p.seat(), 0);
+        if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&focus.surface()) {
             let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
             if let Some(ref focus) = desktop_impl.focus_stack.last() {
                 focus.set_activated(false);
@@ -183,7 +186,11 @@ fn main() {
     let sock_name = DISPLAY.add_socket_auto();
     unsafe { libc::setenv(ffi::CString::new("WAYLAND_DISPLAY").expect("CString").as_ptr(), sock_name.as_ptr(), 1); }
 
-    let _ = process::Command::new("gtk3-demo").spawn().expect("spawn");
+    use std::os::unix::process::CommandExt;
+    let _ = process::Command::new("weston-terminal").before_exec(|| {
+        priority::make_normal();
+        Ok(())
+    }).spawn().expect("spawn");
 
     COMPOSITOR.wake();
     DISPLAY.run();

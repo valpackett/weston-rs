@@ -23,6 +23,7 @@ pub use wayland_sys::common::{
 };
 use std::borrow::Borrow;
 use std::os::raw::c_void;
+use std::ptr;
 
 // These don't need any wrapping, they're just bundles of i32 fields
 pub type Geometry = libweston_sys::weston_geometry;

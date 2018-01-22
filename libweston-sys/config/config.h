@@ -15,6 +15,9 @@
 /* Define to 1 if you have the <execinfo.h> header file. */
 #define HAVE_EXECINFO_H 1
 
+/* Define to 1 if you have the `strchrnul' function. */
+#define HAVE_STRCHRNUL 1
+
 /* gbm supports dmabuf import */
 #define HAVE_GBM_FD_IMPORT 1
 
