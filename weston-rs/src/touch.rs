@@ -21,7 +21,7 @@ pub trait TouchGrab where Self: Sized {
     fn cancel(&mut self, touch: &mut Touch);
 
     unsafe fn into_weston(self) -> *mut weston_touch_grab_interface {
-        let mut wrapper = Box::new(TouchGrabWrapper {
+        let wrapper = Box::new(TouchGrabWrapper {
             base: weston_touch_grab_interface {
                 down: Some(run_down::<Self>),
                 up: Some(run_up::<Self>),

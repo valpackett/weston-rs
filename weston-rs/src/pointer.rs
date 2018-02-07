@@ -97,7 +97,7 @@ pub trait PointerGrab where Self: Sized {
     fn cancel(&mut self, pointer: &mut Pointer) {}
 
     unsafe fn into_weston(self) -> *mut weston_pointer_grab_interface {
-        let mut wrapper = Box::new(PointerGrabWrapper {
+        let wrapper = Box::new(PointerGrabWrapper {
             base: weston_pointer_grab_interface {
                 focus: Some(run_focus::<Self>),
                 motion: Some(run_motion::<Self>),

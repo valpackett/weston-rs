@@ -57,7 +57,7 @@ pub trait KeyboardGrab where Self: Sized {
     fn cancel(&mut self, keyboard: &mut Keyboard);
 
     unsafe fn into_weston(self) -> *mut weston_keyboard_grab_interface {
-        let mut wrapper = Box::new(KeyboardGrabWrapper {
+        let wrapper = Box::new(KeyboardGrabWrapper {
             base: weston_keyboard_grab_interface {
                 key: Some(run_key::<Self>),
                 modifiers: Some(run_modifiers::<Self>),

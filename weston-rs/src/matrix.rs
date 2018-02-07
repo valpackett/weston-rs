@@ -1,4 +1,3 @@
-use libc;
 use std::{mem, ops};
 use libweston_sys::{
     weston_vector, weston_matrix,

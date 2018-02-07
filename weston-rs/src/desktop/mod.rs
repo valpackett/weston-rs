@@ -26,10 +26,10 @@ pub struct Desktop<'comp, SC> {
 
 impl<'comp, SC> Desktop<'comp, SC> {
     pub fn new(compositor: &'comp Compositor, api: Box<DesktopApi<SC>>) -> Desktop<'comp, SC> {
-        let mut wapi = self::api::make_weston_api::<SC>();
+        let wapi = self::api::make_weston_api::<SC>();
         let mut api = Box::new(api);
         Desktop {
-            ptr: unsafe { weston_desktop_create(compositor.ptr(), &mut *wapi, &mut *api as *mut _ as *mut libc::c_void) },
+            ptr: unsafe { weston_desktop_create(compositor.ptr(), &*wapi, &mut *api as *mut _ as *mut libc::c_void) },
             wapi,
             api,
             phantom: marker::PhantomData,

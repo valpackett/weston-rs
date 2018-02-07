@@ -23,7 +23,7 @@ impl Launcher for LoginwLauncher {
     fn connect(compositor: &Compositor, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
         env::var("LOGINW_FD").ok().and_then(|fdstr| fdstr.parse::<RawFd>().ok()).map(|fd| {
             let sock = Socket::new(fd);
-            let mut req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
+            let req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
             sock.sendmsg(&req, None).expect(".sendmsg()");
             let (resp, tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
             assert!(resp.typ == LoginwResponseType::LoginwPassedFd);

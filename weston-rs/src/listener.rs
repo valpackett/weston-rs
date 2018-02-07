@@ -1,4 +1,4 @@
-use std::{mem, marker};
+use std::mem;
 use std::os::raw::c_void;
 use wayland_sys::server::{signal, wl_signal, wl_listener, wl_list_init};
 use ::WestonObject;

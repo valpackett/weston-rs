@@ -1,5 +1,5 @@
 //! This is a very simple compositor, like
-//! https://github.com/sardemff7/not-a-wm/blob/master/main.c
+//! <https://github.com/sardemff7/not-a-wm/blob/master/main.c>
 //! but in Rust and with a little bit more stuff (e.g. window movement)
 
 extern crate libc;
@@ -71,7 +71,7 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         view.set_position(0.0, -1.0);
         dsurf.get_surface().damage();
         COMPOSITOR.schedule_repaint();
-        if let Some(ref focus) = self.focus_stack.last() {
+        if let Some(focus) = self.focus_stack.last() {
             focus.set_activated(false);
         }
         self.focus_stack.push(dsurf.temp_clone());
@@ -84,11 +84,13 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
     }
 
     fn surface_removed(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
-        self.focus_stack = self.focus_stack.iter().filter(|s| !s.same_as(&dsurf)).map(|s| s.temp_clone()).collect();
         let mut sctx = dsurf.get_user_data().expect("user_data");
-        if let Some(ref focus) = self.focus_stack.last() {
-            focus.set_activated(true);
-            sctx.view.activate(&COMPOSITOR.first_seat().expect("first_seat"), 0);
+        if dsurf.get_activated() {
+            self.focus_stack = self.focus_stack.iter().filter(|s| !s.same_as(&dsurf)).map(|s| s.temp_clone()).collect();
+            if let Some(focus) = self.focus_stack.last() {
+                focus.set_activated(true);
+                sctx.view.activate(&COMPOSITOR.first_seat().expect("first_seat"), 0);
+            }
         }
         dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
@@ -103,8 +105,8 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
                     let (view_x, view_y) = sctx.view.get_position();
                     let grab = MoveGrab {
                         dsurf: dsurf.temp_clone(),
-                        dx: view_x as f64 - wl_fixed_to_double(pointer.grab_x()),
-                        dy: view_y as f64 - wl_fixed_to_double(pointer.grab_y()),
+                        dx: f64::from(view_x) - wl_fixed_to_double(pointer.grab_x()),
+                        dy: f64::from(view_y) - wl_fixed_to_double(pointer.grab_y()),
                     };
                     pointer.start_grab(grab);
                 }
@@ -116,6 +118,8 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
     COMPOSITOR.set_xkb_rule_names(None); // defaults to environment variables
+
+    // Backend setup
     if env::var("LOGINW_FD").is_ok() {
         let launcher = LoginwLauncher::connect(&*COMPOSITOR, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
         COMPOSITOR.set_launcher(launcher);
@@ -143,6 +147,7 @@ fn main() {
     }
     COMPOSITOR.pending_output_coldplug();
 
+    // Background color
     let mut bg_layer = Layer::new(&*COMPOSITOR);
     bg_layer.set_position(POSITION_BACKGROUND);
     let bg_surf = Surface::new(&*COMPOSITOR);
@@ -151,18 +156,20 @@ fn main() {
     let mut bg_view = View::new(&bg_surf);
     bg_layer.entry_insert(&mut bg_view);
 
+    // Layer for user applications
     let mut windows_layer = Layer::new(&*COMPOSITOR);
     windows_layer.set_position(POSITION_NORMAL);
 
+    // Our data for libweston-desktop stuff
     let mut desktop_impl = Box::new(DesktopImpl {
         windows_layer,
         focus_stack: Vec::new(),
     });
-
     let desktop_impl_ptr = &mut *desktop_impl as *mut DesktopImpl; // TODO figure out safe way
 
-    // note: Important to keep around
-    let mut desktop = Desktop::new(&*COMPOSITOR, desktop_impl);
+    // The libweston-desktop object
+    // NOTE: Important to keep around (do not do 'let _')
+    let _desktop = Desktop::new(&*COMPOSITOR, desktop_impl);
 
     // XXX: popup windows are not handled correctly
     let make_focused = |p: Pointer| {
@@ -170,7 +177,7 @@ fn main() {
         focus.activate(&p.seat(), 0);
         if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&focus.surface()) {
             let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
-            if let Some(ref focus) = desktop_impl.focus_stack.last() {
+            if let Some(focus) = desktop_impl.focus_stack.last() {
                 focus.set_activated(false);
             }
             desktop_impl.focus_stack.push(dsurf.temp_clone());
@@ -182,16 +189,24 @@ fn main() {
     // Right click to focus window
     let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| make_focused(p));
 
+    // Ctrl+Enter to spawn a terminal
+    COMPOSITOR.add_key_binding(28, KeyboardModifier::CTRL, &|_, _, _| {
+        use std::os::unix::process::CommandExt;
+        let _ = process::Command::new("weston-terminal").before_exec(|| {
+            // loginw sets realtime priority for the compositor
+            // see https://blog.martin-graesslin.com/blog/2017/09/kwinwayland-goes-real-time/ for reasons
+            // we obviously don't want it in user applications :D
+            priority::make_normal();
+            Ok(())
+        }).spawn().expect("spawn");
+    });
+
+    // Set environment for spawned processes (namely, the terminal above)
     env::remove_var("DISPLAY");
     let sock_name = DISPLAY.add_socket_auto();
     unsafe { libc::setenv(ffi::CString::new("WAYLAND_DISPLAY").expect("CString").as_ptr(), sock_name.as_ptr(), 1); }
 
-    use std::os::unix::process::CommandExt;
-    let _ = process::Command::new("weston-terminal").before_exec(|| {
-        priority::make_normal();
-        Ok(())
-    }).spawn().expect("spawn");
-
+    // Go!
     COMPOSITOR.wake();
     DISPLAY.run();
 }
