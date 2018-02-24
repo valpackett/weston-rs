@@ -72,7 +72,6 @@ fn main() {
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "input-method-unstable-v1");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "fullscreen-shell-unstable-v1");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "xdg-shell-unstable-v6");
-    wayland_scan_pkg(&wayland_scanner, &wayland_protos, "xdg-shell-unstable-v5");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "viewporter");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "presentation-time");
     wayland_scan_local(&wayland_scanner, "text-cursor-position");
@@ -153,9 +152,7 @@ fn main() {
                                   "weston/libweston-desktop/surface.c",
                                   "weston/libweston-desktop/wl-shell.c",
                                   "weston/libweston-desktop/xdg-shell-v6.c",
-                                  "weston/libweston-desktop/xdg-shell-v5.c",
                                   "weston/libweston-desktop/xwayland.c",
-                                  "protos/xdg-shell-unstable-v5-protocol.c",
                                   "protos/xdg-shell-unstable-v6-protocol.c",
     ]);
     libweston_desktop_build.include("config").include("protos").include("weston/shared").include("weston/libweston").include("weston")

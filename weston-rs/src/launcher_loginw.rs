@@ -89,9 +89,6 @@ impl Launcher for LoginwLauncher {
         resp.typ == LoginwResponseType::LoginwDone
     }
 
-    fn restore(&mut self) {
-    }
-
     fn get_vt(&mut self) -> libc::c_int {
         self.vt_num
     }

@@ -15,7 +15,6 @@ pub trait Launcher where Self: Sized {
     fn open(&mut self, path: &CStr, flags: libc::c_int) -> RawFd;
     fn close(&mut self, fd: RawFd);
     fn activate_vt(&mut self, vt: libc::c_int) -> bool;
-    fn restore(&mut self);
     fn get_vt(&mut self) -> libc::c_int;
 
     unsafe fn into_weston(self) -> *mut weston_launcher {
@@ -29,7 +28,6 @@ pub trait Launcher where Self: Sized {
             open: Some(run_open::<Self>),
             close: Some(run_close::<Self>),
             activate_vt: Some(run_activate_vt::<Self>),
-            restore: Some(run_restore::<Self>),
             get_vt: Some(run_get_vt::<Self>),
         });
         wrapper.base.iface = Box::into_raw(iface);
@@ -84,12 +82,6 @@ extern "C" fn run_close<T: Launcher>(launcher: *mut weston_launcher, fd: libc::c
 extern "C" fn run_activate_vt<T: Launcher>(launcher: *mut weston_launcher, vt: libc::c_int) -> libc::c_int {
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.activate_vt(vt) as libc::c_int
-}
-
-#[allow(unused_unsafe)]
-extern "C" fn run_restore<T: Launcher>(launcher: *mut weston_launcher) {
-    let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
-    wrapper.user.restore();
 }
 
 #[allow(unused_unsafe)]

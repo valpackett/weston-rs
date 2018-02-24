@@ -24,11 +24,13 @@ pub struct DrmBackendConfig {
     configure_device: Option<unsafe extern "C" fn(*mut weston_compositor, *mut libinput_device)>,
     #[builder(default)]
     pageflip_timeout: u32,
+    #[builder(default)]
+    specific_device: Option<String>,
 }
 
 impl Into<weston_drm_backend_config> for DrmBackendConfig {
     fn into(self) -> weston_drm_backend_config {
-        let DrmBackendConfig { tty, use_pixman, seat_id, gbm_format, configure_device, pageflip_timeout } = self;
+        let DrmBackendConfig { tty, use_pixman, seat_id, gbm_format, configure_device, pageflip_timeout, specific_device } = self;
         weston_drm_backend_config {
             base: weston_backend_config {
                 struct_version: 3,
@@ -41,6 +43,7 @@ impl Into<weston_drm_backend_config> for DrmBackendConfig {
             gbm_format: gbm_format.map(|s| ffi::CString::new(s).expect("CString::new").into_raw()).unwrap_or(ptr::null_mut()),
             configure_device,
             pageflip_timeout,
+            specific_device: specific_device.map(|s| ffi::CString::new(s).expect("CString::new").into_raw()).unwrap_or(ptr::null_mut()),
         }
     }
 }
