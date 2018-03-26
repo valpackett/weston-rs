@@ -56,10 +56,11 @@ fn main() {
     let pixman = Config::new().atleast_version("0.25.2").probe("pixman-1").unwrap();
     let xkbcommon = Config::new().probe("xkbcommon").unwrap();
     let cairo = Config::new().probe("cairo").unwrap();
+    let libpng = Config::new().probe("libpng").unwrap();
     let wayland_scanner = pkg_config::get_variable("wayland-scanner", "wayland_scanner").unwrap();
     let wayland_protos = pkg_config::get_variable("wayland-protocols", "pkgdatadir").unwrap();
-    let wayland_server = Config::new().atleast_version("1.12.0").probe("wayland-server").unwrap();
-    let wayland_client = Config::new().atleast_version("1.12.0").probe("wayland-client").unwrap();
+    let wayland_server = Config::new().atleast_version("1.13.0").probe("wayland-server").unwrap();
+    let wayland_client = Config::new().atleast_version("1.13.0").probe("wayland-client").unwrap();
     let wayland_cursor = Config::new().probe("wayland-cursor").unwrap();
     let wayland_egl = Config::new().probe("wayland-egl").unwrap();
     let egl = Config::new().probe("egl").unwrap();
@@ -70,6 +71,7 @@ fn main() {
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "pointer-constraints-unstable-v1");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "text-input-unstable-v1");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "input-method-unstable-v1");
+    wayland_scan_pkg(&wayland_scanner, &wayland_protos, "input-timestamps-unstable-v1");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "fullscreen-shell-unstable-v1");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "xdg-shell-unstable-v6");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "viewporter");
@@ -107,6 +109,7 @@ fn main() {
                           "weston/libweston/pixel-formats.c",
                           "weston/shared/matrix.c",
                           "weston/shared/file-util.c",
+                          "weston/shared/image-loader.c",
                           "weston/shared/cairo-util.c",
                           "weston/shared/os-compatibility.c",
                           "weston/shared/frame.c",
@@ -115,6 +118,7 @@ fn main() {
                           "protos/pointer-constraints-unstable-v1-protocol.c",
                           "protos/text-input-unstable-v1-protocol.c",
                           "protos/input-method-unstable-v1-protocol.c",
+                          "protos/input-timestamps-unstable-v1-protocol.c",
                           "protos/fullscreen-shell-unstable-v1-protocol.c",
                           "protos/viewporter-protocol.c",
                           "protos/presentation-time-protocol.c",
@@ -124,7 +128,10 @@ fn main() {
         .flag_if_supported("-Wno-unused-parameter")
         .flag_if_supported("-Wno-shift-negative-value")
         .flag_if_supported("-Wno-missing-field-initializers")
-        .flag_if_supported("-fvisibility=hidden");
+        .flag_if_supported("-fstack-protector-strong")
+        .flag_if_supported("-fvisibility=hidden")
+        .flag_if_supported("-flto=thin")
+        .flag_if_supported("-fsanitize=cfi,safe-stack");
     include_pkg!(libweston_build << libdrm);
     include_pkg!(libweston_build << libudev);
     include_pkg!(libweston_build << gbm);
@@ -132,6 +139,7 @@ fn main() {
     include_pkg!(libweston_build << pixman);
     include_pkg!(libweston_build << xkbcommon);
     include_pkg!(libweston_build << cairo);
+    include_pkg!(libweston_build << libpng);
     include_pkg!(libweston_build << wayland_server);
     include_pkg!(libweston_build << wayland_client);
     include_pkg!(libweston_build << wayland_cursor);
@@ -159,7 +167,10 @@ fn main() {
         .flag_if_supported("-Wno-unused-parameter")
         .flag_if_supported("-Wno-shift-negative-value")
         .flag_if_supported("-Wno-missing-field-initializers")
-        .flag_if_supported("-fvisibility=hidden");
+        .flag_if_supported("-fstack-protector-strong")
+        .flag_if_supported("-fvisibility=hidden")
+        .flag_if_supported("-flto=thin")
+        .flag_if_supported("-fsanitize=cfi,safe-stack");
     include_pkg!(libweston_desktop_build << pixman);
     include_pkg!(libweston_desktop_build << wayland_server);
     libweston_desktop_build.compile("libweston-desktop.a");
