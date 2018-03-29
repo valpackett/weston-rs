@@ -1,5 +1,8 @@
 use libc;
 use libweston_sys::{
+    weston_activate_flag_WESTON_ACTIVATE_FLAG_NONE,
+    weston_activate_flag_WESTON_ACTIVATE_FLAG_CONFIGURE,
+    weston_activate_flag_WESTON_ACTIVATE_FLAG_CLICKED,
     weston_view, weston_view_create, weston_view_destroy,
     weston_view_set_position, weston_view_set_transform_parent,
     weston_view_set_mask, weston_view_set_mask_infinite,
@@ -17,6 +20,15 @@ use ::WestonObject;
 use ::surface::Surface;
 use ::output::Output;
 use ::seat::Seat;
+
+bitflags! {
+    #[derive(Default)]
+    pub struct ActivateFlag: u32 {
+        const NONE = weston_activate_flag_WESTON_ACTIVATE_FLAG_NONE;
+        const CONFIGURE = weston_activate_flag_WESTON_ACTIVATE_FLAG_CONFIGURE;
+        const CLICKED = weston_activate_flag_WESTON_ACTIVATE_FLAG_CLICKED;
+    }
+}
 
 pub struct View {
     ptr: *mut weston_view,
@@ -107,8 +119,8 @@ impl View {
         (vx, vy)
     }
 
-    pub fn activate(&self, seat: &Seat, flags: u32) {
-        unsafe { weston_view_activate(self.ptr, seat.ptr(), flags); }
+    pub fn activate(&self, seat: &Seat, flags: ActivateFlag) {
+        unsafe { weston_view_activate(self.ptr, seat.ptr(), flags.bits()); }
     }
 
     obj_accessors!(View | parent_view = |&this| { (*this.ptr).parent_view });

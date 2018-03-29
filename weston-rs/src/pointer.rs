@@ -194,6 +194,7 @@ impl Pointer {
     prop_accessors!(i32 | hotspot_x, hotspot_y);
     prop_accessors!(wl_fixed_t | grab_x, grab_y, x, y, sx, sy);
     prop_accessors!(ptr wl_signal | focus_signal, motion_signal, destroy_signal);
+    prop_accessors!(weston_pointer_grab | default_grab);
 
     pub fn motion_to_abs(&self, event: PointerMotionEvent) -> (wl_fixed_t, wl_fixed_t) {
         let mut x = 0;
@@ -260,6 +261,10 @@ impl Pointer {
 
     pub fn moove(&self, event: PointerMotionEvent) {
         unsafe { weston_pointer_move(self.ptr, &mut event.into()); }
+    }
+
+    pub fn is_default_grab(&self) -> bool {
+        return unsafe { (*self.ptr).grab == &mut (*self.ptr).default_grab };
     }
 }
 

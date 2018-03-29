@@ -142,6 +142,12 @@ macro_rules! obj_accessors {
             $typ::from_ptr_temporary(unsafe { let $self = &self; $acc })
         })+
     };
+    ($typ:ident<$typp:tt> | $($prop:ident = |&$self:ident| $acc:block),+) => {
+        $(#[inline] pub fn $prop<'a, $typp>(&'a self) -> $typ<$typp> {
+            use ::WestonObject;
+            $typ::from_ptr_temporary(unsafe { let $self = &self; $acc })
+        })+
+    };
     (opt $typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
         $(#[inline] pub fn $prop<'a>(&'a self) -> Option<$typ> {
             use ::WestonObject;

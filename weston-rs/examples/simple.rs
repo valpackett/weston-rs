@@ -52,16 +52,16 @@ impl PointerGrab for MoveGrab {
     }
 }
 
-
 /// Per-surface user data for Desktop Surfaces (libweston-desktop's wrapper around surfaces)
 struct SurfaceContext {
     view: View,
+    focus_count: i16,
 }
 
 /// User data for the Desktop API implementation
 struct DesktopImpl<'a> {
     windows_layer: Layer<'a>,
-    focus_stack: Vec<DesktopSurface<SurfaceContext>>,
+    stack: Vec<DesktopSurface<SurfaceContext>>,
 }
 
 impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
@@ -71,27 +71,21 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         view.set_position(0.0, -1.0);
         dsurf.get_surface().damage();
         COMPOSITOR.schedule_repaint();
-        if let Some(focus) = self.focus_stack.last() {
-            focus.set_activated(false);
+        if let Some(focus) = self.stack.last() {
+            //focus.set_activated(false);
         }
-        self.focus_stack.push(dsurf.temp_clone());
-        dsurf.set_activated(true);
+        self.stack.push(dsurf.temp_clone());
+        //dsurf.set_activated(true);
         // NOTE: activate causes SIGBUS in wl_signal_emit when there's no keyboard???
-        view.activate(&COMPOSITOR.first_seat().expect("first_seat"), 0);
+        view.activate(&COMPOSITOR.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
         let _ = dsurf.set_user_data(Box::new(SurfaceContext {
             view,
+            focus_count: 0,
         }));
     }
 
     fn surface_removed(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
         let mut sctx = dsurf.get_user_data().expect("user_data");
-        if dsurf.get_activated() {
-            self.focus_stack = self.focus_stack.iter().filter(|s| !s.same_as(&dsurf)).map(|s| s.temp_clone()).collect();
-            if let Some(focus) = self.focus_stack.last() {
-                focus.set_activated(true);
-                sctx.view.activate(&COMPOSITOR.first_seat().expect("first_seat"), 0);
-            }
-        }
         dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
     }
@@ -112,6 +106,22 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
                 }
             }
         }
+    }
+}
+
+fn activate(focus_view: View, seat: Seat, flags: ActivateFlag) {
+    let main_surf = focus_view.surface().get_main_surface();
+    if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&main_surf) {
+        focus_view.activate(&seat, flags);
+    }
+}
+
+fn click_activate(p: Pointer) {
+    if !p.is_default_grab() {
+        return;
+    }
+    if let Some(focus_view) = p.focus() {
+        activate(focus_view, p.seat(), ActivateFlag::CONFIGURE | ActivateFlag::CLICKED);
     }
 }
 
@@ -163,7 +173,7 @@ fn main() {
     // Our data for libweston-desktop stuff
     let mut desktop_impl = Box::new(DesktopImpl {
         windows_layer,
-        focus_stack: Vec::new(),
+        stack: Vec::new(),
     });
     let desktop_impl_ptr = &mut *desktop_impl as *mut DesktopImpl; // TODO figure out safe way
 
@@ -171,23 +181,28 @@ fn main() {
     // NOTE: Important to keep around (do not do 'let _')
     let _desktop = Desktop::new(&*COMPOSITOR, desktop_impl);
 
-    // XXX: popup windows are not handled correctly
-    let make_focused = |p: Pointer| {
-        let focus = p.focus().expect("focus");
-        focus.activate(&p.seat(), 0);
-        if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&focus.surface()) {
-            let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
-            if let Some(focus) = desktop_impl.focus_stack.last() {
-                focus.set_activated(false);
-            }
-            desktop_impl.focus_stack.push(dsurf.temp_clone());
-            dsurf.set_activated(true);
-        }
-    };
     // Left click to focus window
-    let _ = COMPOSITOR.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| make_focused(p));
+    let _ = COMPOSITOR.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
     // Right click to focus window
-    let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| make_focused(p));
+    let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
+    // XXX: popup windows are not handled correctly
+    WlListener::new(Box::new(move |p: Keyboard| {
+        println!("FOCUS KEYBOARD");
+        let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
+        if let Some(dsurf) = desktop_impl.stack.last() {
+            dsurf.set_activated(false);
+        }
+        if let Some(focus) = p.focus() {
+            //focus.activate(&p.seat(), 0);
+            if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&focus) {
+                if let Some(pos) = desktop_impl.stack.iter().position(|s| s.same_as(&dsurf)) {
+                    let _ = desktop_impl.stack.remove(pos);
+                }
+                desktop_impl.stack.push(dsurf.temp_clone());
+                dsurf.set_activated(true);
+            }
+        }
+    })).signal_add(COMPOSITOR.first_seat().expect("first_seat").get_keyboard().expect("first_seat get_keyboard").focus_signal());
 
     // Ctrl+Enter to spawn a terminal
     COMPOSITOR.add_key_binding(28, KeyboardModifier::CTRL, &|_, _, _| {
