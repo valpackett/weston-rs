@@ -26,6 +26,12 @@ impl Surface {
 }
 
 impl SurfaceRef {
+    obj_accessors!(SurfaceRef | main_surface main_surface_mut = |&this| { weston_surface_get_main_surface(this.as_ptr()) });
+    obj_accessors!(OutputRef | output output_mut= |&this| { (*this.as_ptr()).output });
+    obj_accessors!(CompositorRef | compositor compositor_mut = |&this| { (*this.as_ptr()).compositor });
+    prop_accessors!(u32 | output_mask);
+    prop_accessors!(ptr wl_signal | destroy_signal, commit_signal);
+
     pub fn set_size(&self, width: i32, height: i32) {
         unsafe { weston_surface_set_size(self.as_ptr(), width, height); }
     }
@@ -63,10 +69,4 @@ impl SurfaceRef {
         unsafe { weston_surface_get_content_size(self.as_ptr(), &mut width, &mut height); }
         (width, height)
     }
-
-    obj_accessors!(SurfaceRef | get_main_surface = |&this| { weston_surface_get_main_surface(this.as_ptr()) });
-    obj_accessors!(OutputRef | output = |&this| { (*this.as_ptr()).output });
-    obj_accessors!(CompositorRef | compositor = |&this| { (*this.as_ptr()).compositor });
-    prop_accessors!(u32 | output_mask);
-    prop_accessors!(ptr wl_signal | destroy_signal, commit_signal);
 }

@@ -20,10 +20,10 @@ foreign_type! {
 }
 
 impl SeatRef {
-    obj_accessors!(opt PointerRef | get_pointer = |&this| { weston_seat_get_pointer(this.as_ptr()) });
-    obj_accessors!(opt KeyboardRef | get_keyboard = |&this| { weston_seat_get_keyboard(this.as_ptr()) });
-    obj_accessors!(opt TouchRef | get_touch = |&this| { weston_seat_get_touch(this.as_ptr()) });
-    obj_accessors!(opt SurfaceRef | saved_kbd_focus = |&this| { (*this.as_ptr()).saved_kbd_focus });
+    obj_accessors!(opt PointerRef | pointer pointer_mut = |&this| { weston_seat_get_pointer(this.as_ptr()) });
+    obj_accessors!(opt KeyboardRef | keyboard keyboard_mut = |&this| { weston_seat_get_keyboard(this.as_ptr()) });
+    obj_accessors!(opt TouchRef | touch touch_mut = |&this| { weston_seat_get_touch(this.as_ptr()) });
+    obj_accessors!(opt SurfaceRef | saved_kbd_focus saved_kbd_focus_mut = |&this| { (*this.as_ptr()).saved_kbd_focus });
     prop_accessors!(ptr wl_signal | destroy_signal, updated_caps_signal, selection_signal);
     prop_accessors!(libc::c_int | pointer_device_count, keyboard_device_count, touch_device_count);
 

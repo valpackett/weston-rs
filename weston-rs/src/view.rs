@@ -44,6 +44,12 @@ impl View {
 }
 
 impl ViewRef {
+    obj_accessors!(ViewRef | parent_view parent_view_mut = |&this| { (*this.as_ptr()).parent_view });
+    obj_accessors!(SurfaceRef | surface surface_mut = |&this| { (*this.as_ptr()).surface });
+    obj_accessors!(OutputRef | output output_mut = |&this| { (*this.as_ptr()).output });
+    prop_accessors!(ptr weston_layer_entry | layer_link);
+    prop_accessors!(ptr wl_signal | destroy_signal);
+
     pub fn get_position(&self) -> (f32, f32) {
         unsafe { ((*self.as_ptr()).geometry.x, (*self.as_ptr()).geometry.y) }
     }
@@ -124,10 +130,4 @@ impl ViewRef {
     pub fn activate(&self, seat: &SeatRef, flags: ActivateFlag) {
         unsafe { weston_view_activate(self.as_ptr(), seat.as_ptr(), flags.bits()); }
     }
-
-    obj_accessors!(ViewRef | parent_view = |&this| { (*this.as_ptr()).parent_view });
-    obj_accessors!(SurfaceRef | surface = |&this| { (*this.as_ptr()).surface });
-    obj_accessors!(OutputRef | output = |&this| { (*this.as_ptr()).output });
-    prop_accessors!(ptr weston_layer_entry | layer_link);
-    prop_accessors!(ptr wl_signal | destroy_signal);
 }

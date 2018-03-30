@@ -44,28 +44,54 @@ macro_rules! prop_accessors {
 }
 
 macro_rules! obj_accessors {
-    ($typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a>(&'a self) -> &mut $typ {
-            use foreign_types::ForeignTypeRef;
-            unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
-        })+
-    };
-    ($typ:ident<$typp:tt> | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a, $typp>(&'a self) -> &mut $typ<$typp> {
-            use foreign_types::ForeignTypeRef;
-            unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
-        })+
-    };
-    (opt $typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a>(&'a self) -> Option<&mut $typ> {
-            use foreign_types::ForeignTypeRef;
-            let ptr = unsafe { let $self = &self; $acc };
-            if ptr.is_null() {
-                None
-            } else {
-                Some(unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) })
+    ($typ:ident | $($prop:ident $prop_mut:ident = |&$self:ident| $acc:block),+) => {
+        $(
+            #[inline] pub fn $prop<'a>(&'a self) -> &$typ {
+                use foreign_types::ForeignTypeRef;
+                unsafe { $typ::from_ptr({ let $self = &self; $acc }) }
             }
-        })+
+
+            #[inline] pub fn $prop_mut<'a>(&'a self) -> &mut $typ {
+                use foreign_types::ForeignTypeRef;
+                unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
+            }
+        )+
+    };
+    ($typ:ident<$typp:tt> | $($prop:ident $prop_mut:ident = |&$self:ident| $acc:block),+) => {
+        $(
+            #[inline] pub fn $prop<'a, $typp>(&'a self) -> &$typ<$typp> {
+                use foreign_types::ForeignTypeRef;
+                unsafe { $typ::from_ptr({ let $self = &self; $acc }) }
+            }
+
+            #[inline] pub fn $prop_mut<'a, $typp>(&'a self) -> &mut $typ<$typp> {
+                use foreign_types::ForeignTypeRef;
+                unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
+            }
+        )+
+    };
+    (opt $typ:ident | $($prop:ident $prop_mut:ident = |&$self:ident| $acc:block),+) => {
+        $(
+            #[inline] pub fn $prop<'a>(&'a self) -> Option<&$typ> {
+                use foreign_types::ForeignTypeRef;
+                let ptr = unsafe { let $self = &self; $acc };
+                if ptr.is_null() {
+                    None
+                } else {
+                    Some(unsafe { $typ::from_ptr({ let $self = &self; $acc }) })
+                }
+            }
+
+            #[inline] pub fn $prop_mut<'a>(&'a self) -> Option<&mut $typ> {
+                use foreign_types::ForeignTypeRef;
+                let ptr = unsafe { let $self = &self; $acc };
+                if ptr.is_null() {
+                    None
+                } else {
+                    Some(unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) })
+                }
+            }
+        )+
     }
 }
 

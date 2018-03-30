@@ -115,8 +115,8 @@ foreign_type! {
 }
 
 impl KeyboardRef {
-    obj_accessors!(SeatRef | seat = |&this| { (*this.as_ptr()).seat });
-    obj_accessors!(opt SurfaceRef | focus = |&this| { (*this.as_ptr()).focus });
+    obj_accessors!(SeatRef | seat seat_mut = |&this| { (*this.as_ptr()).seat });
+    obj_accessors!(opt SurfaceRef | focus focus_mut = |&this| { (*this.as_ptr()).focus });
     prop_accessors!(u32 | focus_serial, grab_key, grab_serial);
     prop_accessors!(ptr wl_signal | focus_signal);
 

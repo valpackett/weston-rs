@@ -38,7 +38,7 @@ impl<'a> PointerGrab for MoveGrab<'a> {
         pointer.moove(event);
         let sctx = self.dsurf.borrow_user_data().expect("user_data");
         sctx.view.set_position((wl_fixed_to_double(pointer.x()) + self.dx) as f32, (wl_fixed_to_double(pointer.y()) + self.dy) as f32);
-        self.dsurf.get_surface().compositor().schedule_repaint();
+        self.dsurf.surface().compositor().schedule_repaint();
     }
 
     fn button(&mut self, pointer: &mut PointerRef, _time: &libc::timespec, _button: u32, state: ButtonState) {
@@ -69,7 +69,7 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
         let mut view = dsurf.create_view();
         self.windows_layer.entry_insert(&mut view);
         view.set_position(0.0, -1.0);
-        dsurf.get_surface().damage();
+        dsurf.surface().damage();
         COMPOSITOR.schedule_repaint();
         if let Some(focus) = self.stack.last() {
             //focus.set_activated(false);
@@ -92,10 +92,10 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
 
     fn moove(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>, seat: &mut SeatRef, serial: u32) {
         let sctx = dsurf.borrow_user_data().expect("user_data");
-        if let Some(pointer) = seat.get_pointer() {
+        if let Some(pointer) = seat.pointer() {
             if let Some(focus) = pointer.focus() {
                 if pointer.button_count() > 0 && serial == pointer.grab_serial() &&
-                    focus.surface().get_main_surface().as_ptr() == dsurf.get_surface().as_ptr() {
+                    focus.surface().main_surface().as_ptr() == dsurf.surface().as_ptr() {
                     let (view_x, view_y) = sctx.view.get_position();
                     let grab = MoveGrab {
                         dsurf: unsafe { DesktopSurfaceRef::from_ptr_mut(dsurf.as_ptr()) },
@@ -110,7 +110,7 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
 }
 
 fn activate(focus_view: &ViewRef, seat: &SeatRef, flags: ActivateFlag) {
-    let main_surf = focus_view.surface().get_main_surface();
+    let main_surf = focus_view.surface().main_surface();
     if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf) {
         focus_view.activate(&seat, flags);
     }
@@ -202,7 +202,7 @@ fn main() {
                 dsurf.set_activated(true);
             }
         }
-    })).signal_add(COMPOSITOR.first_seat().expect("first_seat").get_keyboard().expect("first_seat get_keyboard").focus_signal());
+    })).signal_add(COMPOSITOR.first_seat().expect("first_seat").keyboard().expect("first_seat keyboard").focus_signal());
 
     // Ctrl+Enter to spawn a terminal
     COMPOSITOR.add_key_binding(28, KeyboardModifier::CTRL, &|_, _, _| {

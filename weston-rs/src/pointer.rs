@@ -186,10 +186,10 @@ foreign_type! {
 }
 
 impl PointerRef {
-    obj_accessors!(SeatRef | seat = |&this| { (*this.as_ptr()).seat });
+    obj_accessors!(SeatRef | seat seat_mut = |&this| { (*this.as_ptr()).seat });
     obj_accessors!(opt ViewRef |
-                   focus = |&this| { (*this.as_ptr()).focus },
-                   sprite = |&this| { (*this.as_ptr()).sprite });
+                   focus focus_mut = |&this| { (*this.as_ptr()).focus },
+                   sprite sprite_mut = |&this| { (*this.as_ptr()).sprite });
     prop_accessors!(u32 | focus_serial, grab_button, grab_serial, button_count);
     prop_accessors!(i32 | hotspot_x, hotspot_y);
     prop_accessors!(wl_fixed_t | grab_x, grab_y, x, y, sx, sy);

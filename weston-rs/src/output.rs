@@ -16,6 +16,7 @@ foreign_type! {
 }
 
 impl OutputRef {
+    prop_accessors!(ptr wl_signal | frame_signal, destroy_signal);
 
     pub fn set_scale(&self, scale: libc::c_int) {
         unsafe { weston_output_set_scale(self.as_ptr(), scale); }
@@ -36,6 +37,4 @@ impl OutputRef {
     pub fn disable(&self) {
         unsafe { weston_output_disable(self.as_ptr()); }
     }
-
-    prop_accessors!(ptr wl_signal | frame_signal, destroy_signal);
 }

@@ -78,6 +78,18 @@ impl Compositor {
 }
 
 impl CompositorRef {
+    obj_accessors!(LayerRef |
+                   fade_layer fade_layer_mut = |&this| { &mut (*this.as_ptr()).fade_layer },
+                   cursor_layer cursor_layer_mut = |&this| { &mut (*this.as_ptr()).cursor_layer });
+    obj_accessors!(opt SeatRef |
+                   first_seat first_seat_mut = |&this| { wl_container_of!((*this.as_ptr()).seat_list.next, weston_seat, link) });
+    prop_accessors!(
+        ptr wl_signal | destroy_signal, create_surface_signal, activate_signal, transform_signal,
+        kill_signal, idle_signal, wake_signal, show_input_panel_signal, hide_input_panel_signal,
+        update_input_panel_signal, seat_created_signal, output_pending_signal, output_created_signal,
+        output_destroyed_signal, output_moved_signal, output_resized_signal, session_signal);
+    prop_accessors!(i32 | kb_repeat_rate, kb_repeat_delay);
+
     pub fn get_display(&self) -> Display {
         unsafe { Display::from_ptr((*self.as_ptr()).wl_display) }
     }
@@ -137,16 +149,4 @@ impl CompositorRef {
     pub fn add_debug_binding<'comp, F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(&'comp self, key: u32, handler: &'comp F) {
         unsafe { weston_compositor_add_debug_binding(self.as_ptr(), key, Some(run_key_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
-
-    obj_accessors!(LayerRef |
-                   fade_layer = |&this| { &mut (*this.as_ptr()).fade_layer },
-                   cursor_layer = |&this| { &mut (*this.as_ptr()).cursor_layer });
-    obj_accessors!(opt SeatRef |
-                   first_seat = |&this| { wl_container_of!((*this.as_ptr()).seat_list.next, weston_seat, link) });
-    prop_accessors!(
-        ptr wl_signal | destroy_signal, create_surface_signal, activate_signal, transform_signal,
-        kill_signal, idle_signal, wake_signal, show_input_panel_signal, hide_input_panel_signal,
-        update_input_panel_signal, seat_created_signal, output_pending_signal, output_created_signal,
-        output_destroyed_signal, output_moved_signal, output_resized_signal, session_signal);
-    prop_accessors!(i32 | kb_repeat_rate, kb_repeat_delay);
 }

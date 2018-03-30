@@ -59,8 +59,8 @@ impl<T> ForeignTypeRef for DesktopSurfaceRef<T> {
 }
 
 impl<T> DesktopSurfaceRef<T> {
-    obj_accessors!(DesktopClientRef | get_client = |&this| { weston_desktop_surface_get_client(this.as_ptr()) });
-    obj_accessors!(SurfaceRef | get_surface = |&this| { weston_desktop_surface_get_surface(this.as_ptr()) });
+    obj_accessors!(DesktopClientRef | client client_mut = |&this| { weston_desktop_surface_get_client(this.as_ptr()) });
+    obj_accessors!(SurfaceRef | surface surface_mut = |&this| { weston_desktop_surface_get_surface(this.as_ptr()) });
 
     pub fn from_surface(surface: &SurfaceRef) -> Option<&mut DesktopSurfaceRef<T>> {
         if unsafe { weston_surface_is_desktop_surface(surface.as_ptr()) } {

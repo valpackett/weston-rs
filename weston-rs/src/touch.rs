@@ -80,8 +80,8 @@ foreign_type! {
 }
 
 impl TouchRef {
-    obj_accessors!(SeatRef | seat = |&this| { (*this.as_ptr()).seat });
-    obj_accessors!(opt ViewRef | focus = |&this| { (*this.as_ptr()).focus });
+    obj_accessors!(SeatRef | seat seat_mut = |&this| { (*this.as_ptr()).seat });
+    obj_accessors!(opt ViewRef | focus focus_mut = |&this| { (*this.as_ptr()).focus });
     prop_accessors!(u32 | focus_serial, num_tp, grab_serial);
     prop_accessors!(ptr wl_signal | focus_signal);
 
