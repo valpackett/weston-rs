@@ -1,4 +1,3 @@
-use std::mem;
 use libc;
 use libweston_sys::{
     weston_keyboard_modifier_MODIFIER_CTRL,
@@ -19,7 +18,7 @@ use libweston_sys::{
 };
 use wayland_sys::server::wl_signal;
 pub use wayland_server::protocol::wl_keyboard::KeyState;
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::seat::SeatRef;
 use ::surface::SurfaceRef;
 
@@ -51,11 +50,11 @@ bitflags! {
 }
 
 pub trait KeyboardGrab where Self: Sized {
-    fn key(&mut self, keyboard: &mut KeyboardRef, time: &libc::timespec, key: u32, state: KeyState) {}
-    fn modifiers(&mut self, keyboard: &mut KeyboardRef, serial: u32,
-                 mods_depressed: KeyboardModifier, mods_latched: KeyboardModifier,
-                 mods_locked: KeyboardModifier, group: u32);
-    fn cancel(&mut self, keyboard: &mut KeyboardRef);
+    fn key(&mut self, _keyboard: &mut KeyboardRef, _time: &libc::timespec, _key: u32, _state: KeyState) {}
+    fn modifiers(&mut self, _keyboard: &mut KeyboardRef, _serial: u32,
+                 _mods_depressed: KeyboardModifier, _mods_latched: KeyboardModifier,
+                 _mods_locked: KeyboardModifier, _group: u32);
+    fn cancel(&mut self, _keyboard: &mut KeyboardRef);
 
     unsafe fn into_weston(self) -> *mut weston_keyboard_grab_interface {
         let wrapper = Box::new(KeyboardGrabWrapper {

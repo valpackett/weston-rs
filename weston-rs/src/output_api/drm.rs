@@ -1,4 +1,6 @@
-use std::{mem, ptr, ffi, marker, borrow};
+#![allow(non_upper_case_globals)]
+
+use std::{mem, ptr, ffi};
 use libweston_sys::{
     weston_plugin_api_get,
     weston_drm_output_api,
@@ -7,7 +9,7 @@ use libweston_sys::{
     weston_drm_backend_output_mode_WESTON_DRM_BACKEND_OUTPUT_CURRENT,
     weston_drm_backend_output_mode_WESTON_DRM_BACKEND_OUTPUT_PREFERRED,
 };
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::compositor::CompositorRef;
 use ::output::OutputRef;
 
@@ -30,7 +32,7 @@ pub trait DrmOutput {
 }
 
 // The API impl is not a create/destroy thing really
-fn noop_destroy(_: *mut weston_drm_output_api) {}
+unsafe fn noop_destroy(_: *mut weston_drm_output_api) {}
 
 foreign_type! {
     type CType = weston_drm_output_api;

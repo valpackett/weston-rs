@@ -1,5 +1,7 @@
+#![allow(non_upper_case_globals)]
+
 use libc;
-use std::{mem, ptr, ffi, marker};
+use std::{ptr, ffi, marker};
 use libweston_sys::{
     weston_desktop_surface,
     weston_desktop_surface_get_user_data, weston_desktop_surface_set_user_data,

@@ -5,20 +5,20 @@ use libweston_sys::{
     weston_desktop_api, weston_desktop_surface, weston_desktop_client,
     weston_seat, weston_output,
 };
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::output::OutputRef;
 use ::seat::SeatRef;
 use super::surface::{DesktopSurfaceRef, SurfaceEdge};
 use super::client::DesktopClientRef;
 
 pub trait DesktopApi<SC> {
-    fn ping_timeout(&mut self, client: &mut DesktopClientRef) {}
+    fn ping_timeout(&mut self, _client: &mut DesktopClientRef) {}
 
-    fn pong(&mut self, client: &mut DesktopClientRef) {}
+    fn pong(&mut self, _client: &mut DesktopClientRef) {}
 
-    fn surface_added(&mut self, surface: &mut DesktopSurfaceRef<SC>);
+    fn surface_added(&mut self, _surface: &mut DesktopSurfaceRef<SC>);
 
-    fn surface_removed(&mut self, surface: &mut DesktopSurfaceRef<SC>);
+    fn surface_removed(&mut self, _surface: &mut DesktopSurfaceRef<SC>);
 
     fn committed(&mut self, _surface: &mut DesktopSurfaceRef<SC>, _sx: i32, _sy: i32) {}
 

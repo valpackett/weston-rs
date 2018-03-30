@@ -1,4 +1,3 @@
-use std::mem;
 use libc;
 use libweston_sys::{
     weston_desktop_client,
@@ -7,11 +6,11 @@ use libweston_sys::{
     weston_desktop_surface,
 };
 use wayland_server;
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use super::surface::DesktopSurfaceRef;
 
 // The desktop_client is not a create/destroy thing really
-fn noop_destroy(_: *mut weston_desktop_client) {}
+unsafe fn noop_destroy(_: *mut weston_desktop_client) {}
 
 foreign_type! {
     type CType = weston_desktop_client;

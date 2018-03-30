@@ -188,7 +188,7 @@ fn main() {
     // XXX: popup windows are not handled correctly
     WlListener::new(Box::new(move |p: &mut KeyboardRef| {
         println!("FOCUS KEYBOARD");
-        let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
+        let desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
         if let Some(dsurf) = desktop_impl.stack.last() {
             dsurf.set_activated(false);
         }

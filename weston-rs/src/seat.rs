@@ -6,7 +6,7 @@ use libweston_sys::{
     weston_seat_set_keyboard_focus,
 };
 use wayland_sys::server::wl_signal;
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::pointer::PointerRef;
 use ::keyboard::{KeyboardModifier, KeyboardRef};
 use ::touch::TouchRef;

@@ -1,4 +1,3 @@
-use std::mem;
 use libc;
 use libweston_sys::{
     weston_pointer_motion_mask_WESTON_POINTER_MOTION_ABS,
@@ -19,7 +18,7 @@ use libweston_sys::{
 use wayland_sys::common::wl_fixed_t;
 use wayland_sys::server::wl_signal;
 pub use wayland_server::protocol::wl_pointer::{Axis, AxisSource, ButtonState};
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::seat::SeatRef;
 use ::view::ViewRef;
 
@@ -89,13 +88,13 @@ impl Into<weston_pointer_axis_event> for PointerAxisEvent {
 }
 
 pub trait PointerGrab where Self: Sized {
-    fn focus(&mut self, pointer: &mut PointerRef) {}
-    fn motion(&mut self, pointer: &mut PointerRef, time: &libc::timespec, event: PointerMotionEvent) {}
-    fn button(&mut self, pointer: &mut PointerRef, time: &libc::timespec, button: u32, state: ButtonState) {}
-    fn axis(&mut self, pointer: &mut PointerRef, time: &libc::timespec, event: PointerAxisEvent) {}
-    fn axis_source(&mut self, pointer: &mut PointerRef, source: AxisSource) {}
-    fn frame(&mut self, pointer: &mut PointerRef) {}
-    fn cancel(&mut self, pointer: &mut PointerRef) {}
+    fn focus(&mut self, _pointer: &mut PointerRef) {}
+    fn motion(&mut self, _pointer: &mut PointerRef, _time: &libc::timespec, _event: PointerMotionEvent) {}
+    fn button(&mut self, _pointer: &mut PointerRef, _time: &libc::timespec, _button: u32, _state: ButtonState) {}
+    fn axis(&mut self, _pointer: &mut PointerRef, _time: &libc::timespec, _event: PointerAxisEvent) {}
+    fn axis_source(&mut self, _pointer: &mut PointerRef, _source: AxisSource) {}
+    fn frame(&mut self, _pointer: &mut PointerRef) {}
+    fn cancel(&mut self, _pointer: &mut PointerRef) {}
 
     unsafe fn into_weston(self) -> *mut weston_pointer_grab_interface {
         let wrapper = Box::new(PointerGrabWrapper {

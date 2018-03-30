@@ -1,4 +1,3 @@
-use std::mem;
 use libc;
 use libweston_sys::{
     weston_touch_grab, weston_touch_grab_interface,
@@ -10,16 +9,16 @@ use libweston_sys::{
 };
 use wayland_sys::common::wl_fixed_t;
 use wayland_sys::server::wl_signal;
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::seat::SeatRef;
 use ::view::ViewRef;
 
 pub trait TouchGrab where Self: Sized {
-    fn down(&mut self, touch: &mut TouchRef, time: &libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {}
-    fn up(&mut self, touch: &mut TouchRef, time: &libc::timespec, touch_id: libc::c_int) {}
-    fn motion(&mut self, touch: &mut TouchRef, time: &libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {}
-    fn frame(&mut self, touch: &mut TouchRef);
-    fn cancel(&mut self, touch: &mut TouchRef);
+    fn down(&mut self, _touch: &mut TouchRef, _time: &libc::timespec, _touch_id: libc::c_int, _sx: wl_fixed_t, _sy: wl_fixed_t) {}
+    fn up(&mut self, _touch: &mut TouchRef, _time: &libc::timespec, _touch_id: libc::c_int) {}
+    fn motion(&mut self, _touch: &mut TouchRef, _time: &libc::timespec, _touch_id: libc::c_int, _sx: wl_fixed_t, _sy: wl_fixed_t) {}
+    fn frame(&mut self, _touch: &mut TouchRef);
+    fn cancel(&mut self, _touch: &mut TouchRef);
 
     unsafe fn into_weston(self) -> *mut weston_touch_grab_interface {
         let wrapper = Box::new(TouchGrabWrapper {

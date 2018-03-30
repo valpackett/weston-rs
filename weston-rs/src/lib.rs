@@ -24,9 +24,6 @@ pub use foreign_types::{ForeignType, ForeignTypeRef};
 pub use wayland_sys::common::{
     wl_fixed_from_int, wl_fixed_to_int, wl_fixed_to_double, wl_fixed_from_double
 };
-use std::borrow::Borrow;
-use std::os::raw::c_void;
-use std::ptr;
 
 // These don't need any wrapping, they're just bundles of i32 fields
 pub type Geometry = libweston_sys::weston_geometry;

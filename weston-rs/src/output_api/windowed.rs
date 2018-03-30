@@ -1,9 +1,9 @@
-use std::{mem, ffi, marker, borrow};
+use std::{mem, ffi};
 use libweston_sys::{
     weston_plugin_api_get,
     weston_windowed_output_api,
 };
-use foreign_types::{ForeignType, ForeignTypeRef};
+use foreign_types::ForeignTypeRef;
 use ::compositor::CompositorRef;
 use ::output::OutputRef;
 
@@ -17,7 +17,7 @@ pub trait WindowedOutput {
 }
 
 // The API impl is not a create/destroy thing really
-fn noop_destroy(_: *mut weston_windowed_output_api) {}
+unsafe fn noop_destroy(_: *mut weston_windowed_output_api) {}
 
 foreign_type! {
     type CType = weston_windowed_output_api;

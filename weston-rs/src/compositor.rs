@@ -1,4 +1,4 @@
-use std::{mem, ptr};
+use std::ptr;
 use libc;
 use libweston_sys::{
     weston_compositor, weston_compositor_create, weston_compositor_destroy,

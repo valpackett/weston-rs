@@ -1,4 +1,4 @@
-use std::{mem, marker};
+use std::mem;
 use libweston_sys::{
     weston_layer, weston_layer_init,
     weston_layer_position, weston_layer_set_position,
@@ -35,8 +35,8 @@ pub const POSITION_LOCK: LayerPosition = weston_layer_position_WESTON_LAYER_POSI
 pub const POSITION_CURSOR: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_CURSOR;
 pub const POSITION_FADE: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_FADE;
 
-fn drop_layer(ptr: *mut weston_layer) {
-    let _ = unsafe { Box::from_raw(ptr) };
+unsafe fn drop_layer(ptr: *mut weston_layer) {
+    let _ = Box::from_raw(ptr);
 }
 
 foreign_type! {

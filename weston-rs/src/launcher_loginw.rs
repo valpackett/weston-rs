@@ -16,7 +16,7 @@ use loginw::socket::*;
 
 pub struct LoginwLauncher {
     sock: Rc<Socket>,
-    tty_fd: RawFd,
+    // tty_fd: RawFd,
     vt_num: libc::c_int,
 }
 
@@ -26,13 +26,13 @@ impl Launcher for LoginwLauncher {
             let sock = Rc::new(Socket::new(fd));
             let req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
             sock.sendmsg(&req, None).expect(".sendmsg()");
-            let (resp, tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
+            let (resp, _tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
             assert!(resp.typ == LoginwResponseType::LoginwPassedFd);
 
-            compositor.get_display().get_event_loop().add_fd_event_source(
+            let _ = compositor.get_display().get_event_loop().add_fd_event_source(
                 sock.fd,
                 sources::FdEventSourceImpl {
-                    ready: |_: &mut EventLoopHandle, &mut (ref sock, ref mut compositor): &mut (Rc<Socket>, &mut CompositorRef), fd, _| {
+                    ready: |_: &mut EventLoopHandle, &mut (ref sock, ref mut compositor): &mut (Rc<Socket>, &mut CompositorRef), _fd, _| {
                         let (resp, _) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
                         match resp.typ {
                             LoginwResponseType::LoginwActivated => {
@@ -47,7 +47,7 @@ impl Launcher for LoginwLauncher {
                             },
                         }
                     },
-                    error: |_: &mut EventLoopHandle, _, fd, _| {
+                    error: |_: &mut EventLoopHandle, _, _fd, _| {
                         // TODO: restore the tty
                     },
                 },
@@ -57,7 +57,7 @@ impl Launcher for LoginwLauncher {
 
             LoginwLauncher {
                 sock,
-                tty_fd: tty_fd.expect("tty_fd"),
+                // tty_fd: tty_fd.expect("tty_fd"),
                 vt_num: unsafe { resp.dat.u64 as libc::c_int },
             }
         })
