@@ -16,10 +16,10 @@ use libweston_sys::{
 };
 use wayland_sys::common::wl_fixed_t;
 use wayland_sys::server::wl_signal;
-use ::WestonObject;
-use ::surface::Surface;
-use ::output::Output;
-use ::seat::Seat;
+use foreign_types::{ForeignType, ForeignTypeRef};
+use ::surface::SurfaceRef;
+use ::output::OutputRef;
+use ::seat::SeatRef;
 
 bitflags! {
     #[derive(Default)]
@@ -30,110 +30,104 @@ bitflags! {
     }
 }
 
-pub struct View {
-    ptr: *mut weston_view,
-    temp: bool,
+foreign_type! {
+    type CType = weston_view;
+    fn drop = weston_view_destroy;
+    pub struct View;
+    pub struct ViewRef;
 }
 
-weston_object!(View << weston_view);
-
 impl View {
-    pub fn new(surface: &Surface) -> View {
-        View::from_ptr(unsafe { weston_view_create(surface.ptr()) })
+    pub fn new(surface: &SurfaceRef) -> View {
+        unsafe { View::from_ptr(weston_view_create(surface.as_ptr())) }
     }
+}
 
+impl ViewRef {
     pub fn get_position(&self) -> (f32, f32) {
-        unsafe { ((*self.ptr).geometry.x, (*self.ptr).geometry.y) }
+        unsafe { ((*self.as_ptr()).geometry.x, (*self.as_ptr()).geometry.y) }
     }
 
     pub fn set_position(&self, x: f32, y: f32) {
-        unsafe { weston_view_set_position(self.ptr, x, y); }
+        unsafe { weston_view_set_position(self.as_ptr(), x, y); }
     }
 
-    pub fn set_transform_parent(&self, parent: &View) {
-        unsafe { weston_view_set_transform_parent(self.ptr, parent.ptr()); }
+    pub fn set_transform_parent(&self, parent: &ViewRef) {
+        unsafe { weston_view_set_transform_parent(self.as_ptr(), parent.as_ptr()); }
     }
 
     pub fn set_mask(&self, x: libc::c_int, y: libc::c_int, width: libc::c_int, height: libc::c_int) {
-        unsafe { weston_view_set_mask(self.ptr, x, y, width, height); }
+        unsafe { weston_view_set_mask(self.as_ptr(), x, y, width, height); }
     }
 
     pub fn set_mask_infinite(&self) {
-        unsafe { weston_view_set_mask_infinite(self.ptr); }
+        unsafe { weston_view_set_mask_infinite(self.as_ptr()); }
     }
 
     pub fn is_mapped(&self) -> bool {
-        unsafe { weston_view_is_mapped(self.ptr) }
+        unsafe { weston_view_is_mapped(self.as_ptr()) }
     }
 
     pub fn schedule_repaint(&self) {
-        unsafe { weston_view_schedule_repaint(self.ptr); }
+        unsafe { weston_view_schedule_repaint(self.as_ptr()); }
     }
 
     pub fn damage_below(&self) {
-        unsafe { weston_view_damage_below(self.ptr); }
+        unsafe { weston_view_damage_below(self.as_ptr()); }
     }
 
     // TODO weston_view_move_to_plane
 
     pub fn unmap(&self) {
-        unsafe { weston_view_unmap(self.ptr); }
+        unsafe { weston_view_unmap(self.as_ptr()); }
     }
 
     pub fn update_transform(&self) {
-        unsafe { weston_view_update_transform(self.ptr); }
+        unsafe { weston_view_update_transform(self.as_ptr()); }
     }
 
     pub fn to_global_fixed(&self, sx: wl_fixed_t, sy: wl_fixed_t) -> (wl_fixed_t, wl_fixed_t) {
         let mut x = 0;
         let mut y = 0;
-        unsafe { weston_view_to_global_fixed(self.ptr, sx, sy, &mut x, &mut y); }
+        unsafe { weston_view_to_global_fixed(self.as_ptr(), sx, sy, &mut x, &mut y); }
         (x, y)
     }
 
     pub fn to_global_float(&self, sx: f32, sy: f32) -> (f32, f32) {
         let mut x = 0.0;
         let mut y = 0.0;
-        unsafe { weston_view_to_global_float(self.ptr, sx, sy, &mut x, &mut y); }
+        unsafe { weston_view_to_global_float(self.as_ptr(), sx, sy, &mut x, &mut y); }
         (x, y)
     }
 
     pub fn from_global_float(&self, x: f32, y: f32) -> (f32, f32) {
         let mut vx = 0.0;
         let mut vy = 0.0;
-        unsafe { weston_view_from_global_float(self.ptr, x, y, &mut vx, &mut vy); }
+        unsafe { weston_view_from_global_float(self.as_ptr(), x, y, &mut vx, &mut vy); }
         (vx, vy)
     }
 
     pub fn from_global(&self, x: i32, y: i32) -> (i32, i32) {
         let mut vx = 0;
         let mut vy = 0;
-        unsafe { weston_view_from_global(self.ptr, x, y, &mut vx, &mut vy); }
+        unsafe { weston_view_from_global(self.as_ptr(), x, y, &mut vx, &mut vy); }
         (vx, vy)
     }
 
     pub fn from_global_fixed(&self, x: wl_fixed_t, y: wl_fixed_t) -> (wl_fixed_t, wl_fixed_t) {
         let mut vx = 0;
         let mut vy = 0;
-        unsafe { weston_view_from_global_fixed(self.ptr, x, y, &mut vx, &mut vy); }
+        unsafe { weston_view_from_global_fixed(self.as_ptr(), x, y, &mut vx, &mut vy); }
         (vx, vy)
     }
 
-    pub fn activate(&self, seat: &Seat, flags: ActivateFlag) {
-        unsafe { weston_view_activate(self.ptr, seat.ptr(), flags.bits()); }
+    pub fn activate(&self, seat: &SeatRef, flags: ActivateFlag) {
+        unsafe { weston_view_activate(self.as_ptr(), seat.as_ptr(), flags.bits()); }
     }
 
-    obj_accessors!(View | parent_view = |&this| { (*this.ptr).parent_view });
-    obj_accessors!(Surface | surface = |&this| { (*this.ptr).surface });
-    obj_accessors!(Output | output = |&this| { (*this.ptr).output });
+    obj_accessors!(ViewRef | parent_view = |&this| { (*this.as_ptr()).parent_view });
+    obj_accessors!(SurfaceRef | surface = |&this| { (*this.as_ptr()).surface });
+    obj_accessors!(OutputRef | output = |&this| { (*this.as_ptr()).output });
     prop_accessors!(ptr weston_layer_entry | layer_link);
     prop_accessors!(ptr wl_signal | destroy_signal);
-}
-
-impl Drop for View {
-    fn drop(&mut self) {
-        if !self.temp {
-            unsafe { weston_view_destroy(self.ptr); }
-        }
-    }
 }

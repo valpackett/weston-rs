@@ -4,8 +4,8 @@ use libweston_sys::{
     weston_backend_config,
     weston_wayland_backend_init, weston_wayland_backend_config,
 };
-use ::WestonObject;
-use ::compositor::Compositor;
+use foreign_types::ForeignTypeRef;
+use ::compositor::CompositorRef;
 use super::Backend;
 
 #[derive(Builder)]
@@ -44,14 +44,14 @@ impl Into<weston_wayland_backend_config> for WaylandBackendConfig {
 
 pub struct WaylandBackend<'comp> {
     id: libc::c_int,
-    phantom: marker::PhantomData<&'comp Compositor>,
+    phantom: marker::PhantomData<&'comp CompositorRef>,
 }
 
 impl<'comp> WaylandBackend<'comp> {
-    pub fn new(compositor: &Compositor, config: WaylandBackendConfig) -> WaylandBackend {
+    pub fn new(compositor: &CompositorRef, config: WaylandBackendConfig) -> WaylandBackend {
         // conf will get memcpy'd by libweston
         let mut config: weston_wayland_backend_config = config.into();
-        let id = unsafe { weston_wayland_backend_init(compositor.ptr(), &mut config.base as *mut _) };
+        let id = unsafe { weston_wayland_backend_init(compositor.as_ptr(), &mut config.base as *mut _) };
         WaylandBackend {
             id,
             phantom: marker::PhantomData,

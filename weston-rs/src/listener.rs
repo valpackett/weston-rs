@@ -1,21 +1,21 @@
 use std::mem;
 use std::os::raw::c_void;
+use foreign_types::ForeignTypeRef;
 use wayland_sys::server::{signal, wl_signal, wl_listener, wl_list_init};
-use ::WestonObject;
 
-pub struct WlListener<T: WestonObject> {
-    cb: Box<FnMut(T)>,
+pub struct WlListener<T: ForeignTypeRef> {
+    cb: Box<FnMut(&mut T)>,
     wll: wl_listener,
 }
 
 #[allow(unused_unsafe)]
-extern "C" fn run_wl_listener<T: WestonObject>(listener: *mut wl_listener, data: *mut c_void) {
+extern "C" fn run_wl_listener<T: ForeignTypeRef>(listener: *mut wl_listener, data: *mut c_void) {
     let wrapper = unsafe { &mut *wl_container_of!(listener, WlListener<T>, wll) };
-    (*wrapper.cb)(T::from_void_ptr_temporary(data));
+    (*wrapper.cb)(unsafe { T::from_ptr_mut(data as *mut T::CType) });
 }
 
-impl<T: WestonObject> WlListener<T> {
-    pub fn new(cb: Box<FnMut(T)>) -> mem::ManuallyDrop<Box<WlListener<T>>> {
+impl<T: ForeignTypeRef> WlListener<T> {
+    pub fn new(cb: Box<FnMut(&mut T)>) -> mem::ManuallyDrop<Box<WlListener<T>>> {
         let mut result = Box::new(WlListener {
             cb,
             wll: unsafe { mem::zeroed() },

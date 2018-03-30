@@ -27,27 +27,27 @@ weston_logger!{fn wlog_continue(msg: &str) {
 }}
 
 /// Mouse handler for moving windows
-struct MoveGrab {
-    dsurf: DesktopSurface<SurfaceContext>,
+struct MoveGrab<'a> {
+    dsurf: &'a mut DesktopSurfaceRef<SurfaceContext>,
     dx: f64,
     dy: f64,
 }
 
-impl PointerGrab for MoveGrab {
-    fn motion(&mut self, pointer: &mut Pointer, _time: &libc::timespec, event: PointerMotionEvent) {
+impl<'a> PointerGrab for MoveGrab<'a> {
+    fn motion(&mut self, pointer: &mut PointerRef, _time: &libc::timespec, event: PointerMotionEvent) {
         pointer.moove(event);
         let sctx = self.dsurf.borrow_user_data().expect("user_data");
         sctx.view.set_position((wl_fixed_to_double(pointer.x()) + self.dx) as f32, (wl_fixed_to_double(pointer.y()) + self.dy) as f32);
         self.dsurf.get_surface().compositor().schedule_repaint();
     }
 
-    fn button(&mut self, pointer: &mut Pointer, _time: &libc::timespec, _button: u32, state: ButtonState) {
+    fn button(&mut self, pointer: &mut PointerRef, _time: &libc::timespec, _button: u32, state: ButtonState) {
         if pointer.button_count() == 0 && state == ButtonState::Released {
             pointer.end_grab();
         }
     }
 
-    fn cancel(&mut self, pointer: &mut Pointer) {
+    fn cancel(&mut self, pointer: &mut PointerRef) {
         pointer.end_grab();
     }
 }
@@ -59,13 +59,13 @@ struct SurfaceContext {
 }
 
 /// User data for the Desktop API implementation
-struct DesktopImpl<'a> {
-    windows_layer: Layer<'a>,
-    stack: Vec<DesktopSurface<SurfaceContext>>,
+struct DesktopImpl {
+    windows_layer: Layer,
+    stack: Vec<DesktopSurfaceRef<SurfaceContext>>,
 }
 
-impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
-    fn surface_added(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
+impl DesktopApi<SurfaceContext> for DesktopImpl {
+    fn surface_added(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>) {
         let mut view = dsurf.create_view();
         self.windows_layer.entry_insert(&mut view);
         view.set_position(0.0, -1.0);
@@ -74,7 +74,7 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         if let Some(focus) = self.stack.last() {
             //focus.set_activated(false);
         }
-        self.stack.push(dsurf.temp_clone());
+        //self.stack.push(dsurf.temp_clone());
         //dsurf.set_activated(true);
         // NOTE: activate causes SIGBUS in wl_signal_emit when there's no keyboard???
         view.activate(&COMPOSITOR.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
@@ -84,21 +84,21 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
         }));
     }
 
-    fn surface_removed(&mut self, dsurf: DesktopSurface<SurfaceContext>) {
+    fn surface_removed(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>) {
         let mut sctx = dsurf.get_user_data().expect("user_data");
         dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
     }
 
-    fn moove(&mut self, dsurf: DesktopSurface<SurfaceContext>, seat: Seat, serial: u32) {
+    fn moove(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>, seat: &mut SeatRef, serial: u32) {
         let sctx = dsurf.borrow_user_data().expect("user_data");
         if let Some(pointer) = seat.get_pointer() {
             if let Some(focus) = pointer.focus() {
                 if pointer.button_count() > 0 && serial == pointer.grab_serial() &&
-                    focus.surface().get_main_surface().same_as(dsurf.get_surface()) {
+                    focus.surface().get_main_surface().as_ptr() == dsurf.get_surface().as_ptr() {
                     let (view_x, view_y) = sctx.view.get_position();
                     let grab = MoveGrab {
-                        dsurf: dsurf.temp_clone(),
+                        dsurf: unsafe { DesktopSurfaceRef::from_ptr_mut(dsurf.as_ptr()) },
                         dx: f64::from(view_x) - wl_fixed_to_double(pointer.grab_x()),
                         dy: f64::from(view_y) - wl_fixed_to_double(pointer.grab_y()),
                     };
@@ -109,14 +109,14 @@ impl<'a> DesktopApi<SurfaceContext> for DesktopImpl<'a> {
     }
 }
 
-fn activate(focus_view: View, seat: Seat, flags: ActivateFlag) {
+fn activate(focus_view: &ViewRef, seat: &SeatRef, flags: ActivateFlag) {
     let main_surf = focus_view.surface().get_main_surface();
-    if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&main_surf) {
+    if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf) {
         focus_view.activate(&seat, flags);
     }
 }
 
-fn click_activate(p: Pointer) {
+fn click_activate(p: &PointerRef) {
     if !p.is_default_grab() {
         return;
     }
@@ -135,7 +135,7 @@ fn main() {
         COMPOSITOR.set_launcher(launcher);
         let _backend = DrmBackend::new(&*COMPOSITOR, DrmBackendConfigBuilder::default().build().unwrap());
         let output_api = COMPOSITOR.get_drm_output().expect("get_drm_output");
-        WlListener::new(Box::new(move |ou: Output| {
+        WlListener::new(Box::new(move |ou: &mut OutputRef| {
             output_api.set_mode(&ou, DrmBackendOutputMode::Current, None);
             ou.set_scale(1);
             ou.set_extra_scale(1.0);
@@ -147,7 +147,7 @@ fn main() {
         let _backend = WaylandBackend::new(&*COMPOSITOR, WaylandBackendConfigBuilder::default().build().unwrap());
         let output_api = COMPOSITOR.get_windowed_output().expect("get_windowed_output");
         output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
-        WlListener::new(Box::new(move |ou: Output| {
+        WlListener::new(Box::new(move |ou: &mut OutputRef| {
             ou.set_scale(1);
             ou.set_extra_scale(1.0);
             ou.set_transform(0);
@@ -186,7 +186,7 @@ fn main() {
     // Right click to focus window
     let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
     // XXX: popup windows are not handled correctly
-    WlListener::new(Box::new(move |p: Keyboard| {
+    WlListener::new(Box::new(move |p: &mut KeyboardRef| {
         println!("FOCUS KEYBOARD");
         let mut desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
         if let Some(dsurf) = desktop_impl.stack.last() {
@@ -194,11 +194,11 @@ fn main() {
         }
         if let Some(focus) = p.focus() {
             //focus.activate(&p.seat(), 0);
-            if let Some(dsurf) = DesktopSurface::<SurfaceContext>::from_surface(&focus) {
-                if let Some(pos) = desktop_impl.stack.iter().position(|s| s.same_as(&dsurf)) {
+            if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&focus) {
+                if let Some(pos) = desktop_impl.stack.iter().position(|s| s.as_ptr() == dsurf.as_ptr()) {
                     let _ = desktop_impl.stack.remove(pos);
                 }
-                desktop_impl.stack.push(dsurf.temp_clone());
+                //desktop_impl.stack.push(dsurf.temp_clone());
                 dsurf.set_activated(true);
             }
         }

@@ -7,9 +7,9 @@ use libweston_sys::{
     weston_drm_backend_output_mode_WESTON_DRM_BACKEND_OUTPUT_CURRENT,
     weston_drm_backend_output_mode_WESTON_DRM_BACKEND_OUTPUT_PREFERRED,
 };
-use ::WestonObject;
-use ::compositor::Compositor;
-use ::output::Output;
+use foreign_types::{ForeignType, ForeignTypeRef};
+use ::compositor::CompositorRef;
+use ::output::OutputRef;
 
 const_cstr!{
     DRM_OUTPUT_API_NAME = "weston_drm_output_api_v1";
@@ -24,71 +24,57 @@ pub enum DrmBackendOutputMode {
 }
 
 pub trait DrmOutput {
-    fn set_mode(&self, output: &Output, mode: DrmBackendOutputMode, modeline: Option<&str>) -> bool;
-    fn set_gbm_format(&self, output: &Output, gbm_format: Option<&str>);
-    fn set_seat(&self, output: &Output, seat: Option<&str>);
+    fn set_mode(&self, output: &OutputRef, mode: DrmBackendOutputMode, modeline: Option<&str>) -> bool;
+    fn set_gbm_format(&self, output: &OutputRef, gbm_format: Option<&str>);
+    fn set_seat(&self, output: &OutputRef, seat: Option<&str>);
 }
 
-pub struct DrmOutputImpl<'comp> {
-    ptr: *mut weston_drm_output_api,
-    phantom: marker::PhantomData<&'comp Compositor>,
+// The API impl is not a create/destroy thing really
+fn noop_destroy(_: *mut weston_drm_output_api) {}
+
+foreign_type! {
+    type CType = weston_drm_output_api;
+    fn drop = noop_destroy;
+    pub struct DrmOutputImpl;
+    pub struct DrmOutputImplRef;
 }
 
-impl<'comp> DrmOutput for DrmOutputImpl<'comp> {
-    fn set_mode(&self, output: &Output, mode: DrmBackendOutputMode, modeline: Option<&str>) -> bool {
+impl DrmOutput for DrmOutputImplRef {
+    fn set_mode(&self, output: &OutputRef, mode: DrmBackendOutputMode, modeline: Option<&str>) -> bool {
         let modeline = modeline.map(|m| ffi::CString::new(m).expect("CString"));
-        unsafe { (*self.ptr).set_mode.expect("set_mode ptr")(output.ptr(), mode as weston_drm_backend_output_mode, modeline.map(|m| m.as_ptr()).unwrap_or(ptr::null())) == 0 }
+        unsafe { (*self.as_ptr()).set_mode.expect("set_mode ptr")(output.as_ptr(), mode as weston_drm_backend_output_mode, modeline.map(|m| m.as_ptr()).unwrap_or(ptr::null())) == 0 }
     }
 
-    fn set_gbm_format(&self, output: &Output, gbm_format: Option<&str>) {
+    fn set_gbm_format(&self, output: &OutputRef, gbm_format: Option<&str>) {
         let gbm_format = gbm_format.map(|f| ffi::CString::new(f).expect("CString"));
-        unsafe { (*self.ptr).set_gbm_format.expect("set_gbm_format ptr")(output.ptr(), gbm_format.map(|f| f.as_ptr()).unwrap_or(ptr::null())) }
+        unsafe { (*self.as_ptr()).set_gbm_format.expect("set_gbm_format ptr")(output.as_ptr(), gbm_format.map(|f| f.as_ptr()).unwrap_or(ptr::null())) }
     }
 
-    fn set_seat(&self, output: &Output, seat: Option<&str>) {
+    fn set_seat(&self, output: &OutputRef, seat: Option<&str>) {
         let seat = seat.map(|s| ffi::CString::new(s).expect("CString"));
-        unsafe { (*self.ptr).set_seat.expect("set_gbm_format ptr")(output.ptr(), seat.map(|s| s.as_ptr()).unwrap_or(ptr::null())) }
+        unsafe { (*self.as_ptr()).set_seat.expect("set_gbm_format ptr")(output.as_ptr(), seat.map(|s| s.as_ptr()).unwrap_or(ptr::null())) }
     }
 }
 
-impl<'comp> WestonObject for DrmOutputImpl<'comp> {
-    type T = weston_drm_output_api;
-
-    fn from_ptr(ptr: *mut Self::T) -> Self {
-        Self::from_ptr_temporary(ptr)
-    }
-
-    fn from_ptr_temporary(ptr: *mut Self::T) -> Self {
-        DrmOutputImpl {
-            ptr,
-            phantom: marker::PhantomData,
-        }
-    }
-
-    fn ptr(&self) -> *mut Self::T {
-        self.ptr
-    }
-}
-
-pub trait HasDrmOutput<'t> {
+pub trait HasDrmOutput {
     type Impl: DrmOutput;
 
-    fn get_drm_output(&self) -> Option<Self::Impl>;
+    fn get_drm_output(&self) -> Option<&mut Self::Impl>;
 }
 
-impl<'comp, C: borrow::Borrow<Compositor>> HasDrmOutput<'comp> for C {
-    type Impl = DrmOutputImpl<'comp>;
+impl HasDrmOutput for CompositorRef {
+    type Impl = DrmOutputImplRef;
 
-    fn get_drm_output(&self) -> Option<Self::Impl> {
+    fn get_drm_output(&self) -> Option<&mut Self::Impl> {
         let ptr = unsafe {
             weston_plugin_api_get(
-                self.borrow().ptr(),
+                self.as_ptr(),
                 DRM_OUTPUT_API_NAME.as_ptr(),
                 mem::size_of::<weston_drm_output_api>())
         } as *mut weston_drm_output_api;
         if ptr.is_null() {
             return None
         }
-        Some(DrmOutputImpl::from_ptr_temporary(ptr))
+        Some(unsafe { DrmOutputImplRef::from_ptr_mut(ptr) })
     }
 }

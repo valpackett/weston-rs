@@ -15,7 +15,7 @@ impl Display {
         }
     }
 
-    pub fn from_ptr_temporary(ptr: *mut wl_display) -> Display {
+    pub fn from_ptr(ptr: *mut wl_display) -> Display {
         Display {
             ptr
         }
@@ -33,7 +33,7 @@ impl Display {
         unsafe { wayland_server::create_event_loop(wl_display_get_event_loop(self.ptr), Some(self.ptr)) }
     }
 
-    pub fn ptr(&self) -> *mut wl_display {
+    pub fn as_ptr(&self) -> *mut wl_display {
         self.ptr
     }
 }

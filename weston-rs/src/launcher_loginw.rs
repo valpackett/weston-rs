@@ -1,11 +1,12 @@
 use libc;
 use std::env;
+use std::rc::Rc;
 use std::io::Write;
 use std::ffi::CStr;
 use std::os::raw;
 use std::os::unix::io::RawFd;
-use ::WestonObject;
-use ::compositor::Compositor;
+use foreign_types::ForeignTypeRef;
+use ::compositor::CompositorRef;
 use ::launcher::Launcher;
 
 use wayland_sys::server::signal::wl_signal_emit;
@@ -14,15 +15,15 @@ use loginw::protocol::*;
 use loginw::socket::*;
 
 pub struct LoginwLauncher {
-    sock: Socket,
+    sock: Rc<Socket>,
     tty_fd: RawFd,
     vt_num: libc::c_int,
 }
 
 impl Launcher for LoginwLauncher {
-    fn connect(compositor: &Compositor, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
+    fn connect(compositor: &CompositorRef, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
         env::var("LOGINW_FD").ok().and_then(|fdstr| fdstr.parse::<RawFd>().ok()).map(|fd| {
-            let sock = Socket::new(fd);
+            let sock = Rc::new(Socket::new(fd));
             let req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
             sock.sendmsg(&req, None).expect(".sendmsg()");
             let (resp, tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
@@ -31,16 +32,16 @@ impl Launcher for LoginwLauncher {
             compositor.get_display().get_event_loop().add_fd_event_source(
                 sock.fd,
                 sources::FdEventSourceImpl {
-                    ready: |_: &mut EventLoopHandle, &mut (ref sock, ref compositor): &mut (Socket, Compositor), fd, _| {
+                    ready: |_: &mut EventLoopHandle, &mut (ref sock, ref mut compositor): &mut (Rc<Socket>, &mut CompositorRef), fd, _| {
                         let (resp, _) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
                         match resp.typ {
                             LoginwResponseType::LoginwActivated => {
                                 compositor.set_session_active(true);
-                                unsafe { wl_signal_emit(compositor.session_signal(), compositor.ptr() as *mut raw::c_void); }
+                                unsafe { wl_signal_emit(compositor.session_signal(), compositor.as_ptr() as *mut raw::c_void); }
                             },
                             LoginwResponseType::LoginwDeactivated => {
                                 compositor.set_session_active(false);
-                                unsafe { wl_signal_emit(compositor.session_signal(), compositor.ptr() as *mut raw::c_void); }
+                                unsafe { wl_signal_emit(compositor.session_signal(), compositor.as_ptr() as *mut raw::c_void); }
                             },
                             _ => {
                             },
@@ -50,7 +51,7 @@ impl Launcher for LoginwLauncher {
                         // TODO: restore the tty
                     },
                 },
-                (sock.temp_clone(), compositor.temp_clone()),
+                (Rc::clone(&sock), unsafe { CompositorRef::from_ptr_mut(compositor.as_ptr()) }),
                 sources::FdInterest::READ,
             );
 

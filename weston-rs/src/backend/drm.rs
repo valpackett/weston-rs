@@ -6,8 +6,8 @@ use libweston_sys::{
     weston_compositor,
 };
 use input_sys::libinput_device;
-use ::WestonObject;
-use ::compositor::Compositor;
+use foreign_types::ForeignTypeRef;
+use ::compositor::CompositorRef;
 use super::Backend;
 
 #[derive(Builder)]
@@ -50,14 +50,14 @@ impl Into<weston_drm_backend_config> for DrmBackendConfig {
 
 pub struct DrmBackend<'comp> {
     id: libc::c_int,
-    phantom: marker::PhantomData<&'comp Compositor>,
+    phantom: marker::PhantomData<&'comp CompositorRef>,
 }
 
 impl<'comp> DrmBackend<'comp> {
-    pub fn new(compositor: &Compositor, config: DrmBackendConfig) -> DrmBackend {
+    pub fn new(compositor: &CompositorRef, config: DrmBackendConfig) -> DrmBackend {
         // conf will get memcpy'd by libweston
         let mut config: weston_drm_backend_config = config.into();
-        let id = unsafe { weston_drm_backend_init(compositor.ptr(), &mut config.base as *mut _) };
+        let id = unsafe { weston_drm_backend_init(compositor.as_ptr(), &mut config.base as *mut _) };
         DrmBackend {
             id,
             phantom: marker::PhantomData,

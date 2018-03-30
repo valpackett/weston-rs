@@ -6,6 +6,8 @@ pub extern crate xkbcommon;
 pub extern crate libc;
 pub extern crate vsprintf;
 #[macro_use]
+extern crate foreign_types;
+#[macro_use]
 extern crate enum_primitive_derive;
 extern crate num_traits;
 #[macro_use]
@@ -18,6 +20,7 @@ extern crate bitflags;
 extern crate derive_builder;
 extern crate loginw;
 
+pub use foreign_types::{ForeignType, ForeignTypeRef};
 pub use wayland_sys::common::{
     wl_fixed_from_int, wl_fixed_to_int, wl_fixed_to_double, wl_fixed_from_double
 };
@@ -30,132 +33,40 @@ pub type Geometry = libweston_sys::weston_geometry;
 pub type Position = libweston_sys::weston_position;
 pub type Size = libweston_sys::weston_size;
 
-pub trait WestonObject where Self: Sized {
-    type T;
-
-    fn from_ptr(ptr: *mut Self::T) -> Self;
-    fn from_ptr_temporary(ptr: *mut Self::T) -> Self;
-    fn ptr(&self) -> *mut Self::T;
-
-    fn from_void_ptr(ptr: *mut c_void) -> Self {
-        Self::from_ptr(ptr as *mut Self::T)
-    }
-
-    fn from_void_ptr_temporary(ptr: *mut c_void) -> Self {
-        Self::from_ptr_temporary(ptr as *mut Self::T)
-    }
-
-    fn same_as<U>(&self, other: U) -> bool where U: Sized + Borrow<Self> {
-        self.ptr() == other.borrow().ptr()
-    }
-}
-
-/// For listeners without args
-impl WestonObject for () {
-    type T = ();
-
-    fn from_ptr(_ptr: *mut Self::T) -> Self {
-        ()
-    }
-
-    fn from_ptr_temporary(_ptr: *mut Self::T) -> Self {
-        ()
-    }
-
-    fn ptr(&self) -> *mut Self::T {
-        ptr::null_mut()
-    }
-}
-
-macro_rules! weston_object {
-    ($wrap:ident << $typ:ident $($k:ident : $v:expr),*) => {
-        impl ::WestonObject for $wrap {
-            type T = $typ;
-
-            #[inline] fn from_ptr(ptr: *mut $typ) -> $wrap {
-                $wrap {
-                    ptr,
-                    temp: false,
-                    $($k: $v)*
-                }
-            }
-
-            #[inline] fn from_ptr_temporary(ptr: *mut $typ) -> $wrap {
-                $wrap {
-                    ptr,
-                    temp: true,
-                    $($k: $v)*
-                }
-            }
-
-            #[inline] fn ptr(&self) -> *mut $typ {
-                self.ptr
-            }
-        }
-    };
-    ($wrap:ident<$tvar:ident> << $typ:ident $($k:ident : $v:expr),*) => {
-        impl<$tvar> ::WestonObject for $wrap<$tvar> {
-            type T = $typ;
-
-            #[inline] fn from_ptr(ptr: *mut $typ) -> $wrap<$tvar> {
-                $wrap {
-                    ptr,
-                    temp: false,
-                    phantom: ::std::marker::PhantomData::<$tvar>,
-                    $($k: $v)*
-                }
-            }
-
-            #[inline] fn from_ptr_temporary(ptr: *mut $typ) -> $wrap<$tvar> {
-                $wrap {
-                    ptr,
-                    temp: true,
-                    phantom: ::std::marker::PhantomData::<$tvar>,
-                    $($k: $v)*
-                }
-            }
-
-            #[inline] fn ptr(&self) -> *mut $typ {
-                self.ptr
-            }
-        }
-    };
-}
-
 macro_rules! prop_accessors {
     ($typ:ty | $($prop:ident),+) => {
         $(#[inline] pub fn $prop(&self) -> $typ {
-            unsafe { (*self.ptr).$prop }
+            unsafe { (*self.as_ptr()).$prop }
         })+
     };
     (ptr $typ:ty | $($prop:ident),+) => {
         $(#[inline] pub fn $prop(&self) -> &mut $typ {
-            unsafe { &mut (*self.ptr).$prop }
+            unsafe { &mut (*self.as_ptr()).$prop }
         })+
     }
 }
 
 macro_rules! obj_accessors {
     ($typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a>(&'a self) -> $typ {
-            use ::WestonObject;
-            $typ::from_ptr_temporary(unsafe { let $self = &self; $acc })
+        $(#[inline] pub fn $prop<'a>(&'a self) -> &mut $typ {
+            use foreign_types::ForeignTypeRef;
+            unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
         })+
     };
     ($typ:ident<$typp:tt> | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a, $typp>(&'a self) -> $typ<$typp> {
-            use ::WestonObject;
-            $typ::from_ptr_temporary(unsafe { let $self = &self; $acc })
+        $(#[inline] pub fn $prop<'a, $typp>(&'a self) -> &mut $typ<$typp> {
+            use foreign_types::ForeignTypeRef;
+            unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
         })+
     };
     (opt $typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
-        $(#[inline] pub fn $prop<'a>(&'a self) -> Option<$typ> {
-            use ::WestonObject;
+        $(#[inline] pub fn $prop<'a>(&'a self) -> Option<&mut $typ> {
+            use foreign_types::ForeignTypeRef;
             let ptr = unsafe { let $self = &self; $acc };
             if ptr.is_null() {
                 None
             } else {
-                Some($typ::from_ptr_temporary(ptr))
+                Some(unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) })
             }
         })+
     }

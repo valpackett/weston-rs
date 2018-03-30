@@ -1,3 +1,4 @@
+use std::mem;
 use libc;
 use libweston_sys::{
     weston_pointer_motion_mask_WESTON_POINTER_MOTION_ABS,
@@ -18,9 +19,9 @@ use libweston_sys::{
 use wayland_sys::common::wl_fixed_t;
 use wayland_sys::server::wl_signal;
 pub use wayland_server::protocol::wl_pointer::{Axis, AxisSource, ButtonState};
-use ::WestonObject;
-use ::seat::Seat;
-use ::view::View;
+use foreign_types::{ForeignType, ForeignTypeRef};
+use ::seat::SeatRef;
+use ::view::ViewRef;
 
 bitflags! {
     #[derive(Default)]
@@ -88,13 +89,13 @@ impl Into<weston_pointer_axis_event> for PointerAxisEvent {
 }
 
 pub trait PointerGrab where Self: Sized {
-    fn focus(&mut self, pointer: &mut Pointer) {}
-    fn motion(&mut self, pointer: &mut Pointer, time: &libc::timespec, event: PointerMotionEvent) {}
-    fn button(&mut self, pointer: &mut Pointer, time: &libc::timespec, button: u32, state: ButtonState) {}
-    fn axis(&mut self, pointer: &mut Pointer, time: &libc::timespec, event: PointerAxisEvent) {}
-    fn axis_source(&mut self, pointer: &mut Pointer, source: AxisSource) {}
-    fn frame(&mut self, pointer: &mut Pointer) {}
-    fn cancel(&mut self, pointer: &mut Pointer) {}
+    fn focus(&mut self, pointer: &mut PointerRef) {}
+    fn motion(&mut self, pointer: &mut PointerRef, time: &libc::timespec, event: PointerMotionEvent) {}
+    fn button(&mut self, pointer: &mut PointerRef, time: &libc::timespec, button: u32, state: ButtonState) {}
+    fn axis(&mut self, pointer: &mut PointerRef, time: &libc::timespec, event: PointerAxisEvent) {}
+    fn axis_source(&mut self, pointer: &mut PointerRef, source: AxisSource) {}
+    fn frame(&mut self, pointer: &mut PointerRef) {}
+    fn cancel(&mut self, pointer: &mut PointerRef) {}
 
     unsafe fn into_weston(self) -> *mut weston_pointer_grab_interface {
         let wrapper = Box::new(PointerGrabWrapper {
@@ -123,14 +124,14 @@ struct PointerGrabWrapper<T: PointerGrab> {
 #[allow(unused_unsafe)]
 extern "C" fn run_focus<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
-    wrapper.user.focus(&mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }));
+    wrapper.user.focus(unsafe { PointerRef::from_ptr_mut((*grab).pointer) });
 }
 
 #[allow(unused_unsafe)]
 extern "C" fn run_motion<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, event: *mut weston_pointer_motion_event) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.motion(
-        &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
+        unsafe { PointerRef::from_ptr_mut((*grab).pointer) },
         unsafe { &*time },
         unsafe { (&*event).into() },
     );
@@ -140,7 +141,7 @@ extern "C" fn run_motion<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *
 extern "C" fn run_button<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, button: u32, state: u32) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.button(
-        &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
+        unsafe { PointerRef::from_ptr_mut((*grab).pointer) },
         unsafe { &*time },
         button,
         ButtonState::from_raw(state).unwrap_or(ButtonState::Released),
@@ -151,7 +152,7 @@ extern "C" fn run_button<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *
 extern "C" fn run_axis<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *const libc::timespec, event: *mut weston_pointer_axis_event) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.axis(
-        &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
+        unsafe { PointerRef::from_ptr_mut((*grab).pointer) },
         unsafe { &*time },
         unsafe { (&*event).into() },
     );
@@ -161,7 +162,7 @@ extern "C" fn run_axis<T: PointerGrab>(grab: *mut weston_pointer_grab, time: *co
 extern "C" fn run_axis_source<T: PointerGrab>(grab: *mut weston_pointer_grab, source: u32) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
     wrapper.user.axis_source(
-        &mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }),
+        unsafe { PointerRef::from_ptr_mut((*grab).pointer) },
         AxisSource::from_raw(source).unwrap_or(AxisSource::Wheel)
     );
 }
@@ -169,27 +170,27 @@ extern "C" fn run_axis_source<T: PointerGrab>(grab: *mut weston_pointer_grab, so
 #[allow(unused_unsafe)]
 extern "C" fn run_frame<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
-    wrapper.user.frame(&mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }));
+    wrapper.user.frame(unsafe { PointerRef::from_ptr_mut((*grab).pointer) });
 }
 
 #[allow(unused_unsafe)]
 extern "C" fn run_cancel<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), PointerGrabWrapper<T>, base) };
-    wrapper.user.cancel(&mut Pointer::from_ptr_temporary(unsafe { (*grab).pointer }));
+    wrapper.user.cancel(unsafe { PointerRef::from_ptr_mut((*grab).pointer) });
 }
 
-pub struct Pointer {
-    ptr: *mut weston_pointer,
-    temp: bool,
+foreign_type! {
+    type CType = weston_pointer;
+    fn drop = weston_pointer_destroy;
+    pub struct Pointer;
+    pub struct PointerRef;
 }
 
-weston_object!(Pointer << weston_pointer);
-
-impl Pointer {
-    obj_accessors!(Seat | seat = |&this| { (*this.ptr).seat });
-    obj_accessors!(opt View |
-                   focus = |&this| { (*this.ptr).focus },
-                   sprite = |&this| { (*this.ptr).sprite });
+impl PointerRef {
+    obj_accessors!(SeatRef | seat = |&this| { (*this.as_ptr()).seat });
+    obj_accessors!(opt ViewRef |
+                   focus = |&this| { (*this.as_ptr()).focus },
+                   sprite = |&this| { (*this.as_ptr()).sprite });
     prop_accessors!(u32 | focus_serial, grab_button, grab_serial, button_count);
     prop_accessors!(i32 | hotspot_x, hotspot_y);
     prop_accessors!(wl_fixed_t | grab_x, grab_y, x, y, sx, sy);
@@ -199,79 +200,71 @@ impl Pointer {
     pub fn motion_to_abs(&self, event: PointerMotionEvent) -> (wl_fixed_t, wl_fixed_t) {
         let mut x = 0;
         let mut y = 0;
-        unsafe { weston_pointer_motion_to_abs(self.ptr, &mut event.into(), &mut x, &mut y); }
+        unsafe { weston_pointer_motion_to_abs(self.as_ptr(), &mut event.into(), &mut x, &mut y); }
         (x, y)
     }
 
     pub fn send_motion(&self, time: &libc::timespec, event: PointerMotionEvent) {
-        unsafe { weston_pointer_send_motion(self.ptr, time, &mut event.into()); }
+        unsafe { weston_pointer_send_motion(self.as_ptr(), time, &mut event.into()); }
     }
 
     pub fn has_focus_resource(&self) -> bool {
-        unsafe { weston_pointer_has_focus_resource(self.ptr) }
+        unsafe { weston_pointer_has_focus_resource(self.as_ptr()) }
     }
 
     pub fn send_button(&self, time: &libc::timespec, button: u32, state_w: ButtonState) {
-        unsafe { weston_pointer_send_button(self.ptr, time, button, state_w.to_raw()); }
+        unsafe { weston_pointer_send_button(self.as_ptr(), time, button, state_w.to_raw()); }
     }
 
     pub fn send_axis(&self, time: &libc::timespec, event: PointerAxisEvent) {
-        unsafe { weston_pointer_send_axis(self.ptr, time, &mut event.into()); }
+        unsafe { weston_pointer_send_axis(self.as_ptr(), time, &mut event.into()); }
     }
 
     pub fn send_axis_source(&self, source: u32) {
-        unsafe { weston_pointer_send_axis_source(self.ptr, source); }
+        unsafe { weston_pointer_send_axis_source(self.as_ptr(), source); }
     }
 
     pub fn send_frame(&self) {
-        unsafe { weston_pointer_send_frame(self.ptr); }
+        unsafe { weston_pointer_send_frame(self.as_ptr()); }
     }
 
-    pub fn set_focus(&self, view: &View, sx: wl_fixed_t, sy: wl_fixed_t) {
-        unsafe { weston_pointer_set_focus(self.ptr, view.ptr(), sx, sy); }
+    pub fn set_focus(&self, view: &ViewRef, sx: wl_fixed_t, sy: wl_fixed_t) {
+        unsafe { weston_pointer_set_focus(self.as_ptr(), view.as_ptr(), sx, sy); }
     }
 
     pub fn clear_focus(&self) {
-        unsafe { weston_pointer_clear_focus(self.ptr); }
+        unsafe { weston_pointer_clear_focus(self.as_ptr()); }
     }
 
     pub fn start_grab<T: PointerGrab>(&self, grab: T) {
         // XXX: leaks the wrapper
         let silly_wrapper = Box::new(weston_pointer_grab {
             interface: unsafe { grab.into_weston() },
-            pointer: self.ptr, // weston will set that to the same value lol
+            pointer: self.as_ptr(), // weston will set that to the same value lol
         });
-        unsafe { weston_pointer_start_grab(self.ptr, Box::into_raw(silly_wrapper)); }
+        unsafe { weston_pointer_start_grab(self.as_ptr(), Box::into_raw(silly_wrapper)); }
     }
 
     pub fn end_grab(&self) {
-        unsafe { weston_pointer_end_grab(self.ptr); }
+        unsafe { weston_pointer_end_grab(self.as_ptr()); }
     }
 
     pub fn set_default_grab<T: PointerGrab>(&self, grab: T) {
-        unsafe { weston_pointer_set_default_grab(self.ptr, grab.into_weston()); }
+        unsafe { weston_pointer_set_default_grab(self.as_ptr(), grab.into_weston()); }
     }
 
     pub fn clamp(&self) -> (wl_fixed_t, wl_fixed_t) {
         let mut x = 0;
         let mut y = 0;
-        unsafe { weston_pointer_clamp(self.ptr, &mut x, &mut y); }
+        unsafe { weston_pointer_clamp(self.as_ptr(), &mut x, &mut y); }
         (x, y)
     }
 
     pub fn moove(&self, event: PointerMotionEvent) {
-        unsafe { weston_pointer_move(self.ptr, &mut event.into()); }
+        unsafe { weston_pointer_move(self.as_ptr(), &mut event.into()); }
     }
 
     pub fn is_default_grab(&self) -> bool {
-        return unsafe { (*self.ptr).grab == &mut (*self.ptr).default_grab };
-    }
-}
-
-impl Drop for Pointer {
-    fn drop(&mut self) {
-        if !self.temp {
-            unsafe { weston_pointer_destroy(self.ptr); }
-        }
+        return unsafe { (*self.as_ptr()).grab == &mut (*self.as_ptr()).default_grab };
     }
 }

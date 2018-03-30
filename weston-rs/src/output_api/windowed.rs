@@ -3,73 +3,59 @@ use libweston_sys::{
     weston_plugin_api_get,
     weston_windowed_output_api,
 };
-use ::WestonObject;
-use ::compositor::Compositor;
-use ::output::Output;
+use foreign_types::{ForeignType, ForeignTypeRef};
+use ::compositor::CompositorRef;
+use ::output::OutputRef;
 
 const_cstr!{
     WINDOWED_OUTPUT_API_NAME = "weston_windowed_output_api_v1";
 }
 
-pub trait WindowedOutput<'comp> {
-    fn output_set_size(&self, output: &Output, width: u32, height: u32) -> bool;
-    fn output_create(&self, compositor: &'comp Compositor, name: &str) -> bool;
+pub trait WindowedOutput {
+    fn output_set_size(&self, output: &OutputRef, width: u32, height: u32) -> bool;
+    fn output_create(&self, compositor: &CompositorRef, name: &str) -> bool;
 }
 
-pub struct WindowedOutputImpl<'comp> {
-    ptr: *mut weston_windowed_output_api,
-    phantom: marker::PhantomData<&'comp Compositor>,
+// The API impl is not a create/destroy thing really
+fn noop_destroy(_: *mut weston_windowed_output_api) {}
+
+foreign_type! {
+    type CType = weston_windowed_output_api;
+    fn drop = noop_destroy;
+    pub struct WindowedOutputImpl;
+    pub struct WindowedOutputImplRef;
 }
 
-impl<'comp> WindowedOutput<'comp> for WindowedOutputImpl<'comp> {
-    fn output_set_size(&self, output: &Output, width: u32, height: u32) -> bool {
-        unsafe { (*self.ptr).output_set_size.expect("output_set_size ptr")(output.ptr(), width as _, height as _) == 0 }
+impl WindowedOutput for WindowedOutputImplRef {
+    fn output_set_size(&self, output: &OutputRef, width: u32, height: u32) -> bool {
+        unsafe { (*self.as_ptr()).output_set_size.expect("output_set_size ptr")(output.as_ptr(), width as _, height as _) == 0 }
     }
 
-    fn output_create(&self, compositor: &'comp Compositor, name: &str) -> bool {
+    fn output_create(&self, compositor: &CompositorRef, name: &str) -> bool {
         let name = ffi::CString::new(name).expect("CString");
-        unsafe { (*self.ptr).output_create.expect("output_create ptr")(compositor.ptr(), name.as_ptr()) == 0 }
+        unsafe { (*self.as_ptr()).output_create.expect("output_create ptr")(compositor.as_ptr(), name.as_ptr()) == 0 }
     }
 }
 
-impl<'comp> WestonObject for WindowedOutputImpl<'comp> {
-    type T = weston_windowed_output_api;
+pub trait HasWindowedOutput {
+    type Impl: WindowedOutput;
 
-    fn from_ptr(ptr: *mut Self::T) -> Self {
-        Self::from_ptr_temporary(ptr)
-    }
-
-    fn from_ptr_temporary(ptr: *mut Self::T) -> Self {
-        WindowedOutputImpl {
-            ptr,
-            phantom: marker::PhantomData,
-        }
-    }
-
-    fn ptr(&self) -> *mut Self::T {
-        self.ptr
-    }
+    fn get_windowed_output(&self) -> Option<&mut Self::Impl>;
 }
 
-pub trait HasWindowedOutput<'t> {
-    type Impl: WindowedOutput<'t>;
+impl HasWindowedOutput for CompositorRef {
+    type Impl = WindowedOutputImplRef;
 
-    fn get_windowed_output(&'t self) -> Option<Self::Impl>;
-}
-
-impl<'comp, C: borrow::Borrow<Compositor>> HasWindowedOutput<'comp> for C {
-    type Impl = WindowedOutputImpl<'comp>;
-
-    fn get_windowed_output(&self) -> Option<Self::Impl> {
+    fn get_windowed_output(&self) -> Option<&mut Self::Impl> {
         let ptr = unsafe {
             weston_plugin_api_get(
-                self.borrow().ptr(),
+                self.as_ptr(),
                 WINDOWED_OUTPUT_API_NAME.as_ptr(),
                 mem::size_of::<weston_windowed_output_api>())
         } as *mut weston_windowed_output_api;
         if ptr.is_null() {
             return None
         }
-        Some(WindowedOutputImpl::from_ptr_temporary(ptr))
+        Some(unsafe { WindowedOutputImplRef::from_ptr_mut(ptr) })
     }
 }

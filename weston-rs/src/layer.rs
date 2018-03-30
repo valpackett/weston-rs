@@ -14,7 +14,7 @@ use libweston_sys::{
     weston_layer_position_WESTON_LAYER_POSITION_FADE,
     weston_layer_entry_insert
 };
-use ::WestonObject;
+use foreign_types::{ForeignType, ForeignTypeRef};
 use ::compositor::Compositor;
 use ::view::View;
 
@@ -35,47 +35,35 @@ pub const POSITION_LOCK: LayerPosition = weston_layer_position_WESTON_LAYER_POSI
 pub const POSITION_CURSOR: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_CURSOR;
 pub const POSITION_FADE: LayerPosition = weston_layer_position_WESTON_LAYER_POSITION_FADE;
 
-pub struct Layer<'comp> {
-    ptr: *mut weston_layer,
-    phantom: marker::PhantomData<&'comp Compositor>,
+fn drop_layer(ptr: *mut weston_layer) {
+    let _ = unsafe { Box::from_raw(ptr) };
 }
 
-unsafe impl<'comp> Sync for Layer<'comp> {}
+foreign_type! {
+    type CType = weston_layer;
+    fn drop = drop_layer;
+    pub struct Layer;
+    pub struct LayerRef;
+}
 
-impl<'comp> WestonObject for Layer<'comp> {
-    type T = weston_layer;
+unsafe impl Sync for Layer {}
 
-    fn from_ptr(ptr: *mut Self::T) -> Self {
-        Self::from_ptr_temporary(ptr)
-    }
-
-    fn from_ptr_temporary(ptr: *mut Self::T) -> Self {
-        Layer {
-            ptr,
-            phantom: marker::PhantomData,
+impl Layer {
+    pub fn new(compositor: &Compositor) -> Layer {
+        let ptr = Box::into_raw(Box::new(unsafe { mem::zeroed() }));
+        unsafe {
+            weston_layer_init(ptr, compositor.as_ptr());
+            Layer::from_ptr(ptr)
         }
     }
-
-    fn ptr(&self) -> *mut weston_layer {
-        self.ptr
-    }
 }
 
-impl<'comp> Layer<'comp> {
-    pub fn new(compositor: &'comp Compositor) -> Layer<'comp> {
-        let result = Layer {
-            ptr: Box::into_raw(Box::new(unsafe { mem::zeroed() })),
-            phantom: marker::PhantomData,
-        };
-        unsafe { weston_layer_init(result.ptr, compositor.ptr()); }
-        result
-    }
-
+impl LayerRef {
     pub fn set_position(&mut self, position: LayerPosition) {
-        unsafe { weston_layer_set_position(self.ptr, position as weston_layer_position); }
+        unsafe { weston_layer_set_position(self.as_ptr(), position as weston_layer_position); }
     }
 
     pub fn entry_insert(&mut self, view: &mut View) {
-        unsafe { weston_layer_entry_insert(&mut (*self.ptr).view_list, view.layer_link()); }
+        unsafe { weston_layer_entry_insert(&mut (*self.as_ptr()).view_list, view.layer_link()); }
     }
 }
