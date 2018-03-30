@@ -54,19 +54,19 @@ impl ViewRef {
         unsafe { ((*self.as_ptr()).geometry.x, (*self.as_ptr()).geometry.y) }
     }
 
-    pub fn set_position(&self, x: f32, y: f32) {
+    pub fn set_position(&mut self, x: f32, y: f32) {
         unsafe { weston_view_set_position(self.as_ptr(), x, y); }
     }
 
-    pub fn set_transform_parent(&self, parent: &ViewRef) {
+    pub fn set_transform_parent(&mut self, parent: &ViewRef) {
         unsafe { weston_view_set_transform_parent(self.as_ptr(), parent.as_ptr()); }
     }
 
-    pub fn set_mask(&self, x: libc::c_int, y: libc::c_int, width: libc::c_int, height: libc::c_int) {
+    pub fn set_mask(&mut self, x: libc::c_int, y: libc::c_int, width: libc::c_int, height: libc::c_int) {
         unsafe { weston_view_set_mask(self.as_ptr(), x, y, width, height); }
     }
 
-    pub fn set_mask_infinite(&self) {
+    pub fn set_mask_infinite(&mut self) {
         unsafe { weston_view_set_mask_infinite(self.as_ptr()); }
     }
 
@@ -74,21 +74,21 @@ impl ViewRef {
         unsafe { weston_view_is_mapped(self.as_ptr()) }
     }
 
-    pub fn schedule_repaint(&self) {
+    pub fn schedule_repaint(&mut self) {
         unsafe { weston_view_schedule_repaint(self.as_ptr()); }
     }
 
-    pub fn damage_below(&self) {
+    pub fn damage_below(&mut self) {
         unsafe { weston_view_damage_below(self.as_ptr()); }
     }
 
     // TODO weston_view_move_to_plane
 
-    pub fn unmap(&self) {
+    pub fn unmap(&mut self) {
         unsafe { weston_view_unmap(self.as_ptr()); }
     }
 
-    pub fn update_transform(&self) {
+    pub fn update_transform(&mut self) {
         unsafe { weston_view_update_transform(self.as_ptr()); }
     }
 
@@ -127,7 +127,7 @@ impl ViewRef {
         (vx, vy)
     }
 
-    pub fn activate(&self, seat: &SeatRef, flags: ActivateFlag) {
+    pub fn activate(&mut self, seat: &SeatRef, flags: ActivateFlag) {
         unsafe { weston_view_activate(self.as_ptr(), seat.as_ptr(), flags.bits()); }
     }
 }

@@ -31,7 +31,7 @@ impl SeatRef {
         KeyboardModifier::from_bits_truncate(unsafe { (*self.as_ptr()).modifier_state })
     }
 
-    pub fn set_keyboard_focus(&self, surface: &SurfaceRef) {
+    pub fn set_keyboard_focus(&mut self, surface: &SurfaceRef) {
         unsafe { weston_seat_set_keyboard_focus(self.as_ptr(), surface.as_ptr()); }
     }
 }

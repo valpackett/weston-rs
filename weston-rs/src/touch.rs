@@ -85,11 +85,11 @@ impl TouchRef {
     prop_accessors!(u32 | focus_serial, num_tp, grab_serial);
     prop_accessors!(ptr wl_signal | focus_signal);
 
-    pub fn set_focus(&self, view: &ViewRef) {
+    pub fn set_focus(&mut self, view: &ViewRef) {
         unsafe { weston_touch_set_focus(self.as_ptr(), view.as_ptr()); }
     }
 
-    pub fn start_grab<T: TouchGrab>(&self, grab: T) {
+    pub fn start_grab<T: TouchGrab>(&mut self, grab: T) {
         // XXX: leaks the wrapper
         let silly_wrapper = Box::new(weston_touch_grab {
             interface: unsafe { grab.into_weston() },
@@ -98,7 +98,7 @@ impl TouchRef {
         unsafe { weston_touch_start_grab(self.as_ptr(), Box::into_raw(silly_wrapper)); }
     }
 
-    pub fn end_grab(&self) {
+    pub fn end_grab(&mut self) {
         unsafe { weston_touch_end_grab(self.as_ptr()); }
     }
 
@@ -106,19 +106,19 @@ impl TouchRef {
         unsafe { weston_touch_has_focus_resource(self.as_ptr()) }
     }
 
-    pub fn send_down(&self, time: &libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
+    pub fn send_down(&mut self, time: &libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
         unsafe { weston_touch_send_down(self.as_ptr(), time, touch_id, sx, sy); }
     }
 
-    pub fn send_up(&self, time: &libc::timespec, touch_id: libc::c_int) {
+    pub fn send_up(&mut self, time: &libc::timespec, touch_id: libc::c_int) {
         unsafe { weston_touch_send_up(self.as_ptr(), time, touch_id); }
     }
 
-    pub fn send_motion(&self, time: &libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
+    pub fn send_motion(&mut self, time: &libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
         unsafe { weston_touch_send_motion(self.as_ptr(), time, touch_id, sx, sy); }
     }
 
-    pub fn send_frame(&self) {
+    pub fn send_frame(&mut self) {
         unsafe { weston_touch_send_frame(self.as_ptr()); }
     }
 }

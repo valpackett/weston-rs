@@ -32,11 +32,11 @@ impl SurfaceRef {
     prop_accessors!(u32 | output_mask);
     prop_accessors!(ptr wl_signal | destroy_signal, commit_signal);
 
-    pub fn set_size(&self, width: i32, height: i32) {
+    pub fn set_size(&mut self, width: i32, height: i32) {
         unsafe { weston_surface_set_size(self.as_ptr(), width, height); }
     }
 
-    pub fn set_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
+    pub fn set_color(&mut self, red: f32, green: f32, blue: f32, alpha: f32) {
         unsafe { weston_surface_set_color(self.as_ptr(), red, green, blue, alpha); }
     }
 
@@ -51,15 +51,15 @@ impl SurfaceRef {
         unsafe { weston_surface_is_mapped(self.as_ptr()) }
     }
 
-    pub fn schedule_repaint(&self) {
+    pub fn schedule_repaint(&mut self) {
         unsafe { weston_surface_schedule_repaint(self.as_ptr()); }
     }
 
-    pub fn damage(&self) {
+    pub fn damage(&mut self) {
         unsafe { weston_surface_damage(self.as_ptr()); }
     }
 
-    pub fn unmap(&self) {
+    pub fn unmap(&mut self) {
         unsafe { weston_surface_unmap(self.as_ptr()); }
     }
 

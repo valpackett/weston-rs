@@ -2,6 +2,8 @@
 //! <https://github.com/sardemff7/not-a-wm/blob/master/main.c>
 //! but in Rust and with a little bit more stuff (e.g. window movement)
 
+#![feature(nll)]
+
 extern crate libc;
 extern crate loginw;
 #[macro_use]
@@ -69,7 +71,7 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
         let mut view = dsurf.create_view();
         self.windows_layer.entry_insert(&mut view);
         view.set_position(0.0, -1.0);
-        dsurf.surface().damage();
+        dsurf.surface_mut().damage();
         COMPOSITOR.schedule_repaint();
         if let Some(focus) = self.stack.last() {
             //focus.set_activated(false);
@@ -92,7 +94,7 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
 
     fn moove(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>, seat: &mut SeatRef, serial: u32) {
         let sctx = dsurf.borrow_user_data().expect("user_data");
-        if let Some(pointer) = seat.pointer() {
+        if let Some(pointer) = seat.pointer_mut() {
             if let Some(focus) = pointer.focus() {
                 if pointer.button_count() > 0 && serial == pointer.grab_serial() &&
                     focus.surface().main_surface().as_ptr() == dsurf.surface().as_ptr() {
@@ -109,18 +111,18 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
     }
 }
 
-fn activate(focus_view: &ViewRef, seat: &SeatRef, flags: ActivateFlag) {
+fn activate(focus_view: &mut ViewRef, seat: &SeatRef, flags: ActivateFlag) {
     let main_surf = focus_view.surface().main_surface();
     if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf) {
         focus_view.activate(&seat, flags);
     }
 }
 
-fn click_activate(p: &PointerRef) {
+fn click_activate(p: &mut PointerRef) {
     if !p.is_default_grab() {
         return;
     }
-    if let Some(focus_view) = p.focus() {
+    if let Some(focus_view) = p.focus_mut() {
         activate(focus_view, p.seat(), ActivateFlag::CONFIGURE | ActivateFlag::CLICKED);
     }
 }
@@ -160,7 +162,7 @@ fn main() {
     // Background color
     let mut bg_layer = Layer::new(&*COMPOSITOR);
     bg_layer.set_position(POSITION_BACKGROUND);
-    let bg_surf = Surface::new(&*COMPOSITOR);
+    let mut bg_surf = Surface::new(&*COMPOSITOR);
     bg_surf.set_size(8096, 8096);
     bg_surf.set_color(0.1, 0.3, 0.6, 1.0);
     let mut bg_view = View::new(&bg_surf);

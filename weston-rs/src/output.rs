@@ -18,23 +18,23 @@ foreign_type! {
 impl OutputRef {
     prop_accessors!(ptr wl_signal | frame_signal, destroy_signal);
 
-    pub fn set_scale(&self, scale: libc::c_int) {
+    pub fn set_scale(&mut self, scale: libc::c_int) {
         unsafe { weston_output_set_scale(self.as_ptr(), scale); }
     }
 
-    pub fn set_extra_scale(&self, scale: libc::c_float) {
+    pub fn set_extra_scale(&mut self, scale: libc::c_float) {
         unsafe { weston_output_set_extra_scale(self.as_ptr(), scale); }
     }
 
-    pub fn set_transform(&self, transform: libc::c_uint) {
+    pub fn set_transform(&mut self, transform: libc::c_uint) {
         unsafe { weston_output_set_transform(self.as_ptr(), transform); }
     }
 
-    pub fn enable(&self) -> bool {
+    pub fn enable(&mut self) -> bool {
         unsafe { weston_output_enable(self.as_ptr()) == 0 }
     }
 
-    pub fn disable(&self) {
+    pub fn disable(&mut self) {
         unsafe { weston_output_disable(self.as_ptr()); }
     }
 }

@@ -120,11 +120,11 @@ impl KeyboardRef {
     prop_accessors!(u32 | focus_serial, grab_key, grab_serial);
     prop_accessors!(ptr wl_signal | focus_signal);
 
-    pub fn set_focus(&self, surface: &SurfaceRef) {
+    pub fn set_focus(&mut self, surface: &SurfaceRef) {
         unsafe { weston_keyboard_set_focus(self.as_ptr(), surface.as_ptr()); }
     }
 
-    pub fn set_locks(&self, mask: KeyboardLock, value: KeyboardLock) -> bool {
+    pub fn set_locks(&mut self, mask: KeyboardLock, value: KeyboardLock) -> bool {
         unsafe { weston_keyboard_set_locks(self.as_ptr(), mask.bits(), value.bits()) == 0 }
     }
 
@@ -132,16 +132,16 @@ impl KeyboardRef {
         unsafe { weston_keyboard_has_focus_resource(self.as_ptr()) }
     }
 
-    pub fn send_key(&self, time: &libc::timespec, key: u32, state: KeyState) {
+    pub fn send_key(&mut self, time: &libc::timespec, key: u32, state: KeyState) {
         unsafe { weston_keyboard_send_key(self.as_ptr(), time, key, state.to_raw()); }
     }
 
-    pub fn send_modifiers(&self, serial: u32, mods_depressed: KeyboardModifier,
+    pub fn send_modifiers(&mut self, serial: u32, mods_depressed: KeyboardModifier,
                       mods_latched: KeyboardModifier, mods_locked: KeyboardModifier, group: u32) {
         unsafe { weston_keyboard_send_modifiers(self.as_ptr(), serial, mods_depressed.bits(), mods_latched.bits(), mods_locked.bits(), group); }
     }
 
-    pub fn start_grab<T: KeyboardGrab>(&self, grab: T) {
+    pub fn start_grab<T: KeyboardGrab>(&mut self, grab: T) {
         // XXX: leaks the wrapper
         let silly_wrapper = Box::new(weston_keyboard_grab {
             interface: unsafe { grab.into_weston() },
@@ -150,7 +150,7 @@ impl KeyboardRef {
         unsafe { weston_keyboard_start_grab(self.as_ptr(), Box::into_raw(silly_wrapper)); }
     }
 
-    pub fn end_grab(&self) {
+    pub fn end_grab(&mut self) {
         unsafe { weston_keyboard_end_grab(self.as_ptr()); }
     }
 }
