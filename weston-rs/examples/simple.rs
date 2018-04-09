@@ -11,7 +11,7 @@ extern crate weston_rs;
 #[macro_use]
 extern crate lazy_static;
 
-use std::{env, ffi, process};
+use std::{env, ffi, process, cell};
 use weston_rs::*;
 use loginw::priority;
 
@@ -70,19 +70,13 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
     fn surface_added(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>) {
         let mut view = dsurf.create_view();
         self.windows_layer.entry_insert(&mut view);
-        view.set_position(0.0, -1.0);
-        dsurf.surface_mut().damage();
+        //dsurf.surface_mut().damage();
         COMPOSITOR.schedule_repaint();
-        if let Some(focus) = self.stack.last() {
-            //focus.set_activated(false);
-        }
-        //self.stack.push(dsurf.temp_clone());
-        //dsurf.set_activated(true);
-        // NOTE: activate causes SIGBUS in wl_signal_emit when there's no keyboard???
+        dsurf.set_activated(true);
         view.activate(&COMPOSITOR.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
         let _ = dsurf.set_user_data(Box::new(SurfaceContext {
             view,
-            focus_count: 0,
+            focus_count: 1,
         }));
     }
 
@@ -111,10 +105,10 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
     }
 }
 
-fn activate(focus_view: &mut ViewRef, seat: &SeatRef, flags: ActivateFlag) {
-    let main_surf = focus_view.surface().main_surface();
-    if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf) {
-        focus_view.activate(&seat, flags);
+fn activate(view: &mut ViewRef, seat: &SeatRef, flags: ActivateFlag) {
+    let main_surf = view.surface().main_surface();
+    if DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf).is_some() {
+        view.activate(&seat, flags);
     }
 }
 
@@ -187,21 +181,29 @@ fn main() {
     let _ = COMPOSITOR.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
     // Right click to focus window
     let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
-    // XXX: popup windows are not handled correctly
+
+    let focused_surface = cell::RefCell::new(None); // in desktop-shell this is part of seat state
     WlListener::new(Box::new(move |p: &mut KeyboardRef| {
-        println!("FOCUS KEYBOARD");
-        let desktop_impl = unsafe { &mut (*desktop_impl_ptr) };
-        if let Some(dsurf) = desktop_impl.stack.last() {
-            dsurf.set_activated(false);
-        }
-        if let Some(focus) = p.focus() {
-            //focus.activate(&p.seat(), 0);
-            if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&focus) {
-                if let Some(pos) = desktop_impl.stack.iter().position(|s| s.as_ptr() == dsurf.as_ptr()) {
-                    let _ = desktop_impl.stack.remove(pos);
+
+        if let Some(old_focus) = focused_surface.replace(p.focus().map(|f| unsafe { SurfaceRef::from_ptr(f.as_ptr()) })) {
+            if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&old_focus) {
+                if let Some(sctx) = dsurf.borrow_user_data() {
+                    sctx.focus_count -= 1;
+                    if sctx.focus_count == 0 {
+                        dsurf.set_activated(false);
+                    }
                 }
-                //desktop_impl.stack.push(dsurf.temp_clone());
-                dsurf.set_activated(true);
+            }
+        }
+
+        if let Some(focus) = *focused_surface.borrow() {
+            if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&focus) {
+                if let Some(sctx) = dsurf.borrow_user_data() {
+                    if sctx.focus_count == 0 {
+                        dsurf.set_activated(true);
+                    }
+                    sctx.focus_count += 1;
+                }
             }
         }
     })).signal_add(COMPOSITOR.first_seat().expect("first_seat").keyboard().expect("first_seat keyboard").focus_signal());
