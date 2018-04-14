@@ -21,7 +21,7 @@ impl Display {
         }
     }
 
-    pub fn add_socket_auto(&self) -> ffi::CString {
+    pub fn add_socket_auto(&mut self) -> ffi::CString {
         unsafe { ffi::CStr::from_ptr(wl_display_add_socket_auto(self.ptr)).to_owned() }
     }
 

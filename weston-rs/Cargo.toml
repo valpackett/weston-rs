@@ -28,3 +28,4 @@ loginw = { path = "../../loginw" }
 
 [dev-dependencies]
 lazy_static = "1"
+mut_static = "5"

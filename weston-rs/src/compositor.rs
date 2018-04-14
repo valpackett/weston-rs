@@ -94,11 +94,11 @@ impl CompositorRef {
         unsafe { Display::from_ptr((*self.as_ptr()).wl_display) }
     }
 
-    pub fn set_session_active(&self, active: bool) {
+    pub fn set_session_active(&mut self, active: bool) {
         unsafe { (*self.as_ptr()).session_active = active as _; }
     }
 
-    pub fn set_launcher<T: Launcher>(&self, launcher: T) {
+    pub fn set_launcher<T: Launcher>(&mut self, launcher: T) {
         unsafe { (*self.as_ptr()).launcher = launcher.into_weston(); }
     }
 
@@ -106,47 +106,47 @@ impl CompositorRef {
         unsafe { xkb::Context::from_raw_ptr(xkb_context_ref((*self.as_ptr()).xkb_context)) }
     }
 
-    pub fn set_xkb_rule_names(&self, names: Option<*mut xkb_rule_names>) {
+    pub fn set_xkb_rule_names(&mut self, names: Option<*mut xkb_rule_names>) {
         unsafe { weston_compositor_set_xkb_rule_names(self.as_ptr(), names.unwrap_or(ptr::null_mut())); }
     }
 
-    pub fn schedule_repaint(&self) {
+    pub fn schedule_repaint(&mut self) {
         unsafe { weston_compositor_schedule_repaint(self.as_ptr()); }
     }
 
-    pub fn pending_output_coldplug(&self) {
+    pub fn pending_output_coldplug(&mut self) {
         unsafe { weston_pending_output_coldplug(self.as_ptr()); }
     }
 
-    pub fn wake(&self) {
+    pub fn wake(&mut self) {
         unsafe { weston_compositor_wake(self.as_ptr()); }
     }
 
-    pub fn shutdown(&self) {
+    pub fn shutdown(&mut self) {
         unsafe { weston_compositor_shutdown(self.as_ptr()); }
     }
 
-    pub fn add_key_binding<'comp, F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(&'comp self, key: u32, modifier: KeyboardModifier, handler: &'comp F) {
+    pub fn add_key_binding<'comp, F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(&'comp mut self, key: u32, modifier: KeyboardModifier, handler: &'comp F) {
         unsafe { weston_compositor_add_key_binding(self.as_ptr(), key, modifier.bits(), Some(run_key_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
 
-    pub fn add_modifier_binding<'comp, F: FnMut(&mut KeyboardRef, KeyboardModifier)>(&'comp self, modifier: KeyboardModifier, handler: &'comp F) {
+    pub fn add_modifier_binding<'comp, F: FnMut(&mut KeyboardRef, KeyboardModifier)>(&'comp mut self, modifier: KeyboardModifier, handler: &'comp F) {
         unsafe { weston_compositor_add_modifier_binding(self.as_ptr(), modifier.bits(), Some(run_modifier_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
 
-    pub fn add_button_binding<'comp, F: FnMut(&mut PointerRef, &libc::timespec, u32)>(&'comp self, button: u32, modifier: KeyboardModifier, handler: &'comp F) {
+    pub fn add_button_binding<'comp, F: FnMut(&mut PointerRef, &libc::timespec, u32)>(&'comp mut self, button: u32, modifier: KeyboardModifier, handler: &'comp F) {
         unsafe { weston_compositor_add_button_binding(self.as_ptr(), button, modifier.bits(), Some(run_button_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
 
-    pub fn add_touch_binding<'comp, F: FnMut(&mut TouchRef, &libc::timespec)>(&'comp self, modifier: KeyboardModifier, handler: &'comp F) {
+    pub fn add_touch_binding<'comp, F: FnMut(&mut TouchRef, &libc::timespec)>(&'comp mut self, modifier: KeyboardModifier, handler: &'comp F) {
         unsafe { weston_compositor_add_touch_binding(self.as_ptr(), modifier.bits(), Some(run_touch_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
 
-    pub fn add_axis_binding<'comp, F: FnMut(&mut PointerRef, &libc::timespec, PointerAxisEvent)>(&'comp self, axis: Axis, modifier: KeyboardModifier, handler: &'comp F) {
+    pub fn add_axis_binding<'comp, F: FnMut(&mut PointerRef, &libc::timespec, PointerAxisEvent)>(&'comp mut self, axis: Axis, modifier: KeyboardModifier, handler: &'comp F) {
         unsafe { weston_compositor_add_axis_binding(self.as_ptr(), axis.to_raw(), modifier.bits(), Some(run_axis_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
 
-    pub fn add_debug_binding<'comp, F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(&'comp self, key: u32, handler: &'comp F) {
+    pub fn add_debug_binding<'comp, F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(&'comp mut self, key: u32, handler: &'comp F) {
         unsafe { weston_compositor_add_debug_binding(self.as_ptr(), key, Some(run_key_binding::<F>), handler as *const _ as *mut libc::c_void); }
     }
 }

@@ -10,14 +10,15 @@ extern crate loginw;
 extern crate weston_rs;
 #[macro_use]
 extern crate lazy_static;
+extern crate mut_static;
 
 use std::{env, ffi, process, cell};
+use mut_static::MutStatic;
 use weston_rs::*;
 use loginw::priority;
 
 lazy_static! {
-    static ref DISPLAY: Display = Display::new();
-    static ref COMPOSITOR: Compositor = Compositor::new(&*DISPLAY);
+    static ref COMPOSITOR: MutStatic<Compositor> = MutStatic::new();
 }
 
 weston_logger!{fn wlog(msg: &str) {
@@ -40,7 +41,7 @@ impl<'a> PointerGrab for MoveGrab<'a> {
         pointer.moove(event);
         let sctx = self.dsurf.borrow_user_data().expect("user_data");
         sctx.view.set_position((wl_fixed_to_double(pointer.x()) + self.dx) as f32, (wl_fixed_to_double(pointer.y()) + self.dy) as f32);
-        self.dsurf.surface().compositor().schedule_repaint();
+        self.dsurf.surface().compositor_mut().schedule_repaint();
     }
 
     fn button(&mut self, pointer: &mut PointerRef, _time: &libc::timespec, _button: u32, state: ButtonState) {
@@ -70,10 +71,11 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
     fn surface_added(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>) {
         let mut view = dsurf.create_view();
         self.windows_layer.entry_insert(&mut view);
+        let mut compositor = COMPOSITOR.write().expect("compositor MutStatic");
         //dsurf.surface_mut().damage();
-        COMPOSITOR.schedule_repaint();
+        compositor.schedule_repaint();
         dsurf.set_activated(true);
-        view.activate(&COMPOSITOR.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
+        view.activate(&compositor.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
         let _ = dsurf.set_user_data(Box::new(SurfaceContext {
             view,
             focus_count: 1,
@@ -123,14 +125,18 @@ fn click_activate(p: &mut PointerRef) {
 
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
-    COMPOSITOR.set_xkb_rule_names(None); // defaults to environment variables
+
+    let mut display = Display::new();
+    let mut compositor = Compositor::new(&display);
+
+    compositor.set_xkb_rule_names(None); // defaults to environment variables
 
     // Backend setup
     if env::var("LOGINW_FD").is_ok() {
-        let launcher = LoginwLauncher::connect(&*COMPOSITOR, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
-        COMPOSITOR.set_launcher(launcher);
-        let _backend = DrmBackend::new(&*COMPOSITOR, DrmBackendConfigBuilder::default().build().unwrap());
-        let output_api = COMPOSITOR.get_drm_output().expect("get_drm_output");
+        let launcher = LoginwLauncher::connect(&compositor, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
+        compositor.set_launcher(launcher);
+        let _backend = DrmBackend::new(&compositor, DrmBackendConfigBuilder::default().build().unwrap());
+        let output_api = unsafe { DrmOutputImplRef::from_ptr(compositor.get_drm_output().expect("get_drm_output").as_ptr()) };
         WlListener::new(Box::new(move |ou: &mut OutputRef| {
             output_api.set_mode(&ou, DrmBackendOutputMode::Current, None);
             ou.set_scale(1);
@@ -138,49 +144,48 @@ fn main() {
             ou.set_transform(0);
             output_api.set_gbm_format(&ou, None);
             ou.enable();
-        })).signal_add(COMPOSITOR.output_pending_signal());
+        })).signal_add(compositor.output_pending_signal());
     } else {
-        let _backend = WaylandBackend::new(&*COMPOSITOR, WaylandBackendConfigBuilder::default().build().unwrap());
-        let output_api = COMPOSITOR.get_windowed_output().expect("get_windowed_output");
-        output_api.output_create(&*COMPOSITOR, "weston-rs simple example");
+        let _backend = WaylandBackend::new(&compositor, WaylandBackendConfigBuilder::default().build().unwrap());
+        let output_api = unsafe { WindowedOutputImplRef::from_ptr(compositor.get_windowed_output().expect("get_windowed_output").as_ptr()) };
+        output_api.output_create(&compositor, "weston-rs simple example");
         WlListener::new(Box::new(move |ou: &mut OutputRef| {
             ou.set_scale(1);
             ou.set_extra_scale(1.0);
             ou.set_transform(0);
             output_api.output_set_size(&ou, 1280, 720);
             ou.enable();
-        })).signal_add(COMPOSITOR.output_pending_signal());
+        })).signal_add(compositor.output_pending_signal());
     }
-    COMPOSITOR.pending_output_coldplug();
+    compositor.pending_output_coldplug();
 
     // Background color
-    let mut bg_layer = Layer::new(&*COMPOSITOR);
+    let mut bg_layer = Layer::new(&compositor);
     bg_layer.set_position(POSITION_BACKGROUND);
-    let mut bg_surf = Surface::new(&*COMPOSITOR);
+    let mut bg_surf = Surface::new(&compositor);
     bg_surf.set_size(8096, 8096);
     bg_surf.set_color(0.1, 0.3, 0.6, 1.0);
     let mut bg_view = View::new(&bg_surf);
     bg_layer.entry_insert(&mut bg_view);
 
     // Layer for user applications
-    let mut windows_layer = Layer::new(&*COMPOSITOR);
+    let mut windows_layer = Layer::new(&compositor);
     windows_layer.set_position(POSITION_NORMAL);
 
     // Our data for libweston-desktop stuff
-    let mut desktop_impl = Box::new(DesktopImpl {
+    let desktop_impl = Box::new(DesktopImpl {
         windows_layer,
         stack: Vec::new(),
     });
-    let desktop_impl_ptr = &mut *desktop_impl as *mut DesktopImpl; // TODO figure out safe way
 
     // The libweston-desktop object
     // NOTE: Important to keep around (do not do 'let _')
-    let _desktop = Desktop::new(&*COMPOSITOR, desktop_impl);
+    let _desktop = Desktop::new(unsafe { CompositorRef::from_ptr(compositor.as_ptr()) }, desktop_impl);
 
     // Left click to focus window
-    let _ = COMPOSITOR.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
+    let _ = compositor.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
     // Right click to focus window
-    let _ = COMPOSITOR.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
+    let _ = compositor.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
 
     let focused_surface = cell::RefCell::new(None); // in desktop-shell this is part of seat state
     WlListener::new(Box::new(move |p: &mut KeyboardRef| {
@@ -206,10 +211,10 @@ fn main() {
                 }
             }
         }
-    })).signal_add(COMPOSITOR.first_seat().expect("first_seat").keyboard().expect("first_seat keyboard").focus_signal());
+    })).signal_add(compositor.first_seat().expect("first_seat").keyboard().expect("first_seat keyboard").focus_signal());
 
     // Ctrl+Enter to spawn a terminal
-    COMPOSITOR.add_key_binding(28, KeyboardModifier::CTRL, &|_, _, _| {
+    compositor.add_key_binding(28, KeyboardModifier::CTRL, &|_, _, _| {
         use std::os::unix::process::CommandExt;
         let _ = process::Command::new("weston-terminal").before_exec(|| {
             // loginw sets realtime priority for the compositor
@@ -222,10 +227,11 @@ fn main() {
 
     // Set environment for spawned processes (namely, the terminal above)
     env::remove_var("DISPLAY");
-    let sock_name = DISPLAY.add_socket_auto();
+    let sock_name = display.add_socket_auto();
     unsafe { libc::setenv(ffi::CString::new("WAYLAND_DISPLAY").expect("CString").as_ptr(), sock_name.as_ptr(), 1); }
 
     // Go!
-    COMPOSITOR.wake();
-    DISPLAY.run();
+    compositor.wake();
+    COMPOSITOR.set(compositor).expect("compositor MutStatic set");
+    display.run();
 }
