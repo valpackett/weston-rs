@@ -12,7 +12,7 @@ extern crate weston_rs;
 extern crate lazy_static;
 extern crate mut_static;
 
-use std::{env, ffi, process, cell, any};
+use std::{env, ffi, process, cell, any, cmp};
 use mut_static::MutStatic;
 use weston_rs::*;
 use loginw::priority;
@@ -56,10 +56,74 @@ impl<'a> PointerGrab for MoveGrab<'a> {
     }
 }
 
+/// Mouse handler for resizing windows
+struct ResizeGrab<'a> {
+    dsurf: &'a mut DesktopSurfaceRef<SurfaceContext>,
+    edges: Resize,
+    width: i32,
+    height: i32,
+}
+
+impl<'a> PointerGrab for ResizeGrab<'a> {
+    fn motion(&mut self, pointer: &mut PointerRef, _time: &libc::timespec, event: PointerMotionEvent) {
+        pointer.moove(event);
+        let sctx = self.dsurf.borrow_user_data().expect("user_data");
+        let (from_x, from_y) = sctx.view.from_global_fixed(pointer.grab_x(), pointer.grab_y());
+        let (to_x, to_y) = sctx.view.from_global_fixed(pointer.x(), pointer.y());
+        let mut width = self.width;
+        if self.edges.contains(Resize::Left) {
+            width += wl_fixed_to_int(from_x - to_x);
+        } else if self.edges.contains(Resize::Right) {
+            width += wl_fixed_to_int(to_x - from_x);
+        }
+        let mut height = self.height;
+        if self.edges.contains(Resize::Top) {
+            height += wl_fixed_to_int(from_y - to_y);
+        } else if self.edges.contains(Resize::Bottom) {
+            height += wl_fixed_to_int(to_y - from_y);
+        }
+        let mut min_size = self.dsurf.get_min_size();
+        min_size.width = cmp::max(1, min_size.width);
+        min_size.height = cmp::max(1, min_size.height);
+        let max_size = self.dsurf.get_max_size();
+        if width < min_size.width {
+            width = min_size.width;
+        } else if max_size.width > 0 && width > max_size.width {
+            width = max_size.width;
+        }
+        if height < min_size.height {
+            height = min_size.height;
+        } else if max_size.width > 0 && width > max_size.width {
+            // is it right that we're doing the width thing again, not height? (copied from weston desktop shell)
+            width = max_size.width;
+        }
+        self.dsurf.set_size(width, height);
+    }
+
+    fn button(&mut self, pointer: &mut PointerRef, _time: &libc::timespec, _button: u32, state: ButtonState) {
+        if pointer.button_count() == 0 && state == ButtonState::Released {
+            self.cancel(pointer);
+        }
+    }
+
+    fn cancel(&mut self, pointer: &mut PointerRef) {
+        let sctx = self.dsurf.borrow_user_data().expect("user_data");
+        self.dsurf.set_resizing(false);
+        sctx.resize_edges = Resize::None;
+        pointer.end_grab();
+    }
+}
+
+
 /// Per-surface user data for Desktop Surfaces (libweston-desktop's wrapper around surfaces)
 struct SurfaceContext {
     view: View,
     focus_count: i16,
+    /// Commit handling must check if a resize with top/left edges is happening
+    /// and move the surface accordingly
+    resize_edges: Resize,
+    last_width: f32,
+    last_height: f32,
 }
 
 /// User data for the Desktop API implementation
@@ -80,6 +144,9 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
         view.activate(&compositor.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
         let _ = dsurf.set_user_data(Box::new(SurfaceContext {
             view,
+            resize_edges: Resize::None,
+            last_width: 0.0,
+            last_height: 0.0,
             focus_count: 1,
         }));
     }
@@ -88,6 +155,20 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
         let mut sctx = dsurf.get_user_data().expect("user_data");
         dsurf.unlink_view(&mut sctx.view);
         // sctx dropped here, destroying the view
+    }
+
+    fn committed(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>, _sx: i32, _sy: i32) {
+        let sctx = dsurf.borrow_user_data().expect("user_data");
+        let surface = dsurf.surface();
+        let (from_x, from_y) = sctx.view.from_global_float(0.0, 0.0);
+        let (to_x, to_y) = sctx.view.from_global_float(
+            if sctx.resize_edges.contains(Resize::Left) { sctx.last_width - surface.width() as f32 } else { 0.0 },
+            if sctx.resize_edges.contains(Resize::Top) { sctx.last_height - surface.height() as f32 } else { 0.0 },
+        );
+        let (orig_x, orig_y) = sctx.view.get_position();
+        sctx.view.set_position(orig_x + to_x - from_x, orig_y + to_y - from_y);
+        sctx.last_width = surface.width() as f32;
+        sctx.last_height = surface.height() as f32;
     }
 
     fn moove(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>, seat: &mut SeatRef, serial: u32) {
@@ -102,6 +183,30 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
                         dx: f64::from(view_x) - wl_fixed_to_double(pointer.grab_x()),
                         dy: f64::from(view_y) - wl_fixed_to_double(pointer.grab_y()),
                     };
+                    pointer.start_grab(grab);
+                }
+            }
+        }
+    }
+
+    fn resize(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>, seat: &mut SeatRef, serial: u32, edges: Resize) {
+        if edges == Resize::None || edges.contains(Resize::Left | Resize::Right) || edges.contains(Resize::Top | Resize::Bottom) {
+            return
+        }
+        let sctx = dsurf.borrow_user_data().expect("user_data");
+        if let Some(pointer) = seat.pointer_mut() {
+            if let Some(focus) = pointer.focus() {
+                if pointer.button_count() > 0 && serial == pointer.grab_serial() &&
+                    focus.surface().main_surface().as_ptr() == dsurf.surface().as_ptr() {
+                    let geom = dsurf.get_geometry();
+                    let grab = ResizeGrab {
+                        dsurf: unsafe { DesktopSurfaceRef::from_ptr_mut(dsurf.as_ptr()) },
+                        edges,
+                        width: geom.width,
+                        height: geom.height,
+                    };
+                    dsurf.set_resizing(true);
+                    sctx.resize_edges = edges;
                     pointer.start_grab(grab);
                 }
             }

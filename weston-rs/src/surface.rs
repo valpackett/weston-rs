@@ -30,6 +30,7 @@ impl SurfaceRef {
     obj_accessors!(OutputRef | output output_mut= |&this| { (*this.as_ptr()).output });
     obj_accessors!(CompositorRef | compositor compositor_mut = |&this| { (*this.as_ptr()).compositor });
     prop_accessors!(u32 | output_mask);
+    prop_accessors!(i32 | width, height);
     prop_accessors!(ptr wl_signal | destroy_signal, commit_signal);
 
     pub fn set_size(&mut self, width: i32, height: i32) {

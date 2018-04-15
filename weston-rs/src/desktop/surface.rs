@@ -17,35 +17,12 @@ use libweston_sys::{
     weston_desktop_surface_set_resizing, weston_desktop_surface_set_size,
     weston_desktop_surface_close,
     weston_surface_is_desktop_surface, weston_surface_get_desktop_surface,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_NONE,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_LEFT,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_LEFT,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_LEFT,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_RIGHT,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_RIGHT,
-    weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT
 };
 use foreign_types::{ForeignType, ForeignTypeRef};
 use ::{Geometry, Size};
 use ::surface::SurfaceRef;
 use ::view::View;
 use super::client::DesktopClientRef;
-
-#[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq, Primitive)]
-pub enum SurfaceEdge {
-    None = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_NONE,
-    Top = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP,
-    Bottom = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM,
-    Left = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_LEFT,
-    TopLeft = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_LEFT,
-    BottomLeft = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_LEFT,
-    Right = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_RIGHT,
-    TopRight = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_TOP_RIGHT,
-    BottomRight = weston_desktop_surface_edge_WESTON_DESKTOP_SURFACE_EDGE_BOTTOM_RIGHT,
-}
 
 #[allow(dead_code)]
 #[repr(C)] // prevent reordering to allow ForeignTypeRef to cast self (== first field) to the ptr

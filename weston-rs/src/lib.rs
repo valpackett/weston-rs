@@ -24,6 +24,7 @@ pub use foreign_types::{ForeignType, ForeignTypeRef};
 pub use wayland_sys::common::{
     wl_fixed_from_int, wl_fixed_to_int, wl_fixed_to_double, wl_fixed_from_double
 };
+pub use wayland_server::protocol::wl_shell_surface::{Resize, Transient};
 
 // These don't need any wrapping, they're just bundles of i32 fields
 pub type Geometry = libweston_sys::weston_geometry;

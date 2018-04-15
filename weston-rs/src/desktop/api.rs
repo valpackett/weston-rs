@@ -1,14 +1,14 @@
 use libc;
 use std::{mem, any};
-use num_traits::FromPrimitive;
 use libweston_sys::{
     weston_desktop_api, weston_desktop_surface, weston_desktop_client,
     weston_seat, weston_output,
 };
+use wayland_server::protocol::wl_shell_surface::Resize;
 use foreign_types::ForeignTypeRef;
 use ::output::OutputRef;
 use ::seat::SeatRef;
-use super::surface::{DesktopSurfaceRef, SurfaceEdge};
+use super::surface::DesktopSurfaceRef;
 use super::client::DesktopClientRef;
 
 pub trait DesktopApi<SC> {
@@ -31,7 +31,7 @@ pub trait DesktopApi<SC> {
     /// Named like that because `move` is a Rust keyword
     fn moove(&mut self, _surface: &mut DesktopSurfaceRef<SC>, _seat: &mut SeatRef, _serial: u32) {}
 
-    fn resize(&mut self, _surface: &mut DesktopSurfaceRef<SC>, _seat: &mut SeatRef, _serial: u32, _edges: SurfaceEdge) {}
+    fn resize(&mut self, _surface: &mut DesktopSurfaceRef<SC>, _seat: &mut SeatRef, _serial: u32, _edges: Resize) {}
 
     fn fullscreen_requested(&mut self, _surface: &mut DesktopSurfaceRef<SC>, _fullscreen: bool, _output: &mut OutputRef) {}
 
@@ -118,7 +118,7 @@ pub extern "C" fn run_resize<SC>(surface: *mut weston_desktop_surface, seat: *mu
     let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
     let seat = unsafe { SeatRef::from_ptr_mut(seat) };
     let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
-    api.resize(surface, seat, serial, SurfaceEdge::from_u32(edges).unwrap_or(SurfaceEdge::None));
+    api.resize(surface, seat, serial, Resize::from_raw(edges).unwrap_or(Resize::None));
 }
 
 pub extern "C" fn run_fullscreen_requested<SC>(surface: *mut weston_desktop_surface, fullscreen: bool, output: *mut weston_output, user_data: *mut libc::c_void) {
