@@ -12,13 +12,14 @@ extern crate weston_rs;
 extern crate lazy_static;
 extern crate mut_static;
 
-use std::{env, ffi, process, cell};
+use std::{env, ffi, process, cell, any};
 use mut_static::MutStatic;
 use weston_rs::*;
 use loginw::priority;
 
 lazy_static! {
     static ref COMPOSITOR: MutStatic<Compositor> = MutStatic::new();
+    static ref DESKTOP: MutStatic<Desktop<SurfaceContext>> = MutStatic::new();
 }
 
 weston_logger!{fn wlog(msg: &str) {
@@ -64,15 +65,16 @@ struct SurfaceContext {
 /// User data for the Desktop API implementation
 struct DesktopImpl {
     windows_layer: Layer,
-    stack: Vec<DesktopSurfaceRef<SurfaceContext>>,
 }
 
 impl DesktopApi<SurfaceContext> for DesktopImpl {
+    fn as_any(&mut self) -> &mut any::Any { self }
+
     fn surface_added(&mut self, dsurf: &mut DesktopSurfaceRef<SurfaceContext>) {
         let mut view = dsurf.create_view();
-        self.windows_layer.entry_insert(&mut view);
+        self.windows_layer.view_list_entry_insert(&mut view);
         let mut compositor = COMPOSITOR.write().expect("compositor MutStatic");
-        //dsurf.surface_mut().damage();
+        dsurf.surface_mut().damage();
         compositor.schedule_repaint();
         dsurf.set_activated(true);
         view.activate(&compositor.first_seat().expect("first_seat"), ActivateFlag::CONFIGURE);
@@ -108,9 +110,26 @@ impl DesktopApi<SurfaceContext> for DesktopImpl {
 }
 
 fn activate(view: &mut ViewRef, seat: &SeatRef, flags: ActivateFlag) {
-    let main_surf = view.surface().main_surface();
-    if DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf).is_some() {
+    // "cannot borrow *view as mutable" even with nll
+    let main_surf = unsafe { SurfaceRef::from_ptr(view.surface().main_surface().as_ptr()) };
+    if let Some(dsurf) = DesktopSurfaceRef::<SurfaceContext>::from_surface(&main_surf) {
+        let mut desktop = DESKTOP.write().expect("desktop MutStatic");
+        let desktop_impl = desktop.api().as_any().downcast_mut::<DesktopImpl>().expect("DesktopImpl downcast");
+
         view.activate(&seat, flags);
+
+        // Re-insert into the layer to put on top visually
+        if view.layer_link().layer.is_null() {
+            // Except for newly created surfaces (?)
+            // e.g. w/o this, clicking a GTK menu action that spawns a new window would freeze
+            return
+        }
+        view.geometry_dirty();
+        view.layer_entry_remove();
+        desktop_impl.windows_layer.view_list_entry_insert(view);
+        dsurf.propagate_layer();
+        view.geometry_dirty();
+        dsurf.surface_mut().damage();
     }
 }
 
@@ -166,7 +185,7 @@ fn main() {
     bg_surf.set_size(8096, 8096);
     bg_surf.set_color(0.1, 0.3, 0.6, 1.0);
     let mut bg_view = View::new(&bg_surf);
-    bg_layer.entry_insert(&mut bg_view);
+    bg_layer.view_list_entry_insert(&mut bg_view);
 
     // Layer for user applications
     let mut windows_layer = Layer::new(&compositor);
@@ -175,12 +194,11 @@ fn main() {
     // Our data for libweston-desktop stuff
     let desktop_impl = Box::new(DesktopImpl {
         windows_layer,
-        stack: Vec::new(),
     });
 
     // The libweston-desktop object
     // NOTE: Important to keep around (do not do 'let _')
-    let _desktop = Desktop::new(unsafe { CompositorRef::from_ptr(compositor.as_ptr()) }, desktop_impl);
+    let desktop = Desktop::new(unsafe { CompositorRef::from_ptr(compositor.as_ptr()) }, desktop_impl);
 
     // Left click to focus window
     let _ = compositor.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
@@ -233,5 +251,6 @@ fn main() {
     // Go!
     compositor.wake();
     COMPOSITOR.set(compositor).expect("compositor MutStatic set");
+    DESKTOP.set(desktop).expect("desktop MutStatic set");
     display.run();
 }

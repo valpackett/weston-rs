@@ -16,7 +16,7 @@ use libweston_sys::{
 };
 use foreign_types::{ForeignType, ForeignTypeRef};
 use ::compositor::Compositor;
-use ::view::View;
+use ::view::ViewRef;
 
 /// Layer order (higher value means higher in the stack).
 ///
@@ -63,7 +63,7 @@ impl LayerRef {
         unsafe { weston_layer_set_position(self.as_ptr(), position as weston_layer_position); }
     }
 
-    pub fn entry_insert(&mut self, view: &mut View) {
+    pub fn view_list_entry_insert(&mut self, view: &ViewRef) {
         unsafe { weston_layer_entry_insert(&mut (*self.as_ptr()).view_list, view.layer_link()); }
     }
 }

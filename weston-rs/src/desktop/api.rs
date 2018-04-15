@@ -1,5 +1,5 @@
 use libc;
-use std::mem;
+use std::{mem, any};
 use num_traits::FromPrimitive;
 use libweston_sys::{
     weston_desktop_api, weston_desktop_surface, weston_desktop_client,
@@ -12,6 +12,8 @@ use super::surface::{DesktopSurfaceRef, SurfaceEdge};
 use super::client::DesktopClientRef;
 
 pub trait DesktopApi<SC> {
+    fn as_any(&mut self) -> &mut any::Any;
+
     fn ping_timeout(&mut self, _client: &mut DesktopClientRef) {}
 
     fn pong(&mut self, _client: &mut DesktopClientRef) {}

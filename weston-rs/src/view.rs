@@ -8,11 +8,11 @@ use libweston_sys::{
     weston_view_set_mask, weston_view_set_mask_infinite,
     weston_view_is_mapped, weston_view_schedule_repaint,
     weston_view_damage_below, weston_view_unmap,
-    weston_view_update_transform,
+    weston_view_update_transform, weston_view_geometry_dirty,
     weston_view_to_global_fixed, weston_view_to_global_float,
     weston_view_from_global_float, weston_view_from_global, weston_view_from_global_fixed,
     weston_view_activate,
-    weston_layer_entry
+    weston_layer_entry, weston_layer_entry_remove
 };
 use wayland_sys::common::wl_fixed_t;
 use wayland_sys::server::wl_signal;
@@ -90,6 +90,14 @@ impl ViewRef {
 
     pub fn update_transform(&mut self) {
         unsafe { weston_view_update_transform(self.as_ptr()); }
+    }
+
+    pub fn geometry_dirty(&mut self) {
+        unsafe { weston_view_geometry_dirty(self.as_ptr()); }
+    }
+
+    pub fn layer_entry_remove(&mut self) {
+        unsafe { weston_layer_entry_remove(self.layer_link()); }
     }
 
     pub fn to_global_fixed(&self, sx: wl_fixed_t, sy: wl_fixed_t) -> (wl_fixed_t, wl_fixed_t) {

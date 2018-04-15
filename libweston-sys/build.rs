@@ -176,6 +176,7 @@ fn main() {
     libweston_desktop_build.compile("libweston-desktop.a");
 
     bindgen::Builder::default()
+        .impl_debug(true)
         .header("wrapper.h")
         .blacklist_type("timespec")
         .blacklist_type(r"^libinput_.*$")
