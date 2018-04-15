@@ -24,7 +24,7 @@ num-traits = "0"
 foreign-types = "0"
 bitflags = "1"
 derive_builder = "0.5"
-loginw = { path = "../../loginw" }
+loginw = "0"
 
 [dev-dependencies]
 lazy_static = "1"
