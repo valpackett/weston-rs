@@ -306,9 +306,9 @@ fn main() {
     let desktop = Desktop::new(unsafe { CompositorRef::from_ptr(compositor.as_ptr()) }, desktop_impl);
 
     // Left click to focus window
-    let _ = compositor.add_button_binding(0x110, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
+    let _ = compositor.add_button_binding(ev::BTN_LEFT, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
     // Right click to focus window
-    let _ = compositor.add_button_binding(0x111, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
+    let _ = compositor.add_button_binding(ev::BTN_RIGHT, KeyboardModifier::empty(), &|p, _, _| click_activate(p));
 
     let focused_surface = cell::RefCell::new(None); // in desktop-shell this is part of seat state
     WlListener::new(Box::new(move |p: &mut KeyboardRef| {
@@ -337,7 +337,7 @@ fn main() {
     })).signal_add(compositor.first_seat().expect("first_seat").keyboard().expect("first_seat keyboard").focus_signal());
 
     // Ctrl+Enter to spawn a terminal
-    compositor.add_key_binding(28, KeyboardModifier::CTRL, &|_, _, _| {
+    compositor.add_key_binding(ev::KEY_ENTER, KeyboardModifier::CTRL, &|_, _, _| {
         use std::os::unix::process::CommandExt;
         let _ = process::Command::new("weston-terminal").before_exec(|| {
             // loginw sets realtime priority for the compositor
