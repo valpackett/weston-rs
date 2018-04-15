@@ -21,7 +21,7 @@ use xkbcommon::xkb;
 use xkbcommon::xkb::ffi::{xkb_rule_names, xkb_context_ref};
 use wayland_sys::server::wl_signal;
 use foreign_types::{ForeignType, ForeignTypeRef};
-use ::display::Display;
+use wayland_server::{Display, EventLoop};
 use ::layer::LayerRef;
 use ::launcher::Launcher;
 use ::seat::SeatRef;
@@ -68,8 +68,11 @@ foreign_type! {
 unsafe impl Sync for Compositor {}
 
 impl Compositor {
-    pub fn new(display: &Display) -> Compositor {
-        let ptr = unsafe { weston_compositor_create(display.as_ptr(), ptr::null_mut()) };
+    pub fn new(display: &Display, event_loop: *mut EventLoop) -> Compositor {
+        let ptr = unsafe {
+            // The event loop is stored as user data. Used in launcher callbacks.
+            weston_compositor_create(display.ptr(), event_loop as *mut _)
+        };
         // TODO check ptr != null
         let mut result = unsafe { Compositor::from_ptr(ptr) };
         unsafe { (*result.as_ptr()).user_data = &mut result as *mut _ as *mut libc::c_void };
@@ -89,10 +92,6 @@ impl CompositorRef {
         update_input_panel_signal, seat_created_signal, output_pending_signal, output_created_signal,
         output_destroyed_signal, output_moved_signal, output_resized_signal, session_signal);
     prop_accessors!(i32 | kb_repeat_rate, kb_repeat_delay);
-
-    pub fn get_display(&self) -> Display {
-        unsafe { Display::from_ptr((*self.as_ptr()).wl_display) }
-    }
 
     pub fn set_session_active(&mut self, active: bool) {
         unsafe { (*self.as_ptr()).session_active = active as _; }

@@ -5,8 +5,8 @@ members = ["libweston-sys", "weston-rs"]
 #libc = { path = "../../rust-lang/libc" }
 #nix = { path = "../../nix-rust/nix" }
 nix = { git = "https://github.com/nix-rust/nix" }
-wayland-sys = { path = "../../Smithay/wayland-rs/wayland-sys" }
-wayland-server = { path = "../../Smithay/wayland-rs/wayland-server" }
+#wayland-sys = { path = "../../Smithay/wayland-rs/wayland-sys" }
+#wayland-server = { path = "../../Smithay/wayland-rs/wayland-server" }
 loginw = { path = "../loginw" }
 
 #[patch."https://github.com/rust-lang/libc"]

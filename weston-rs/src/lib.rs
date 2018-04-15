@@ -24,6 +24,7 @@ pub use foreign_types::{ForeignType, ForeignTypeRef};
 pub use wayland_sys::common::{
     wl_fixed_from_int, wl_fixed_to_int, wl_fixed_to_double, wl_fixed_from_double
 };
+pub use wayland_server::{Display, EventLoop, create_display};
 pub use wayland_server::protocol::wl_shell_surface::{Resize, Transient};
 pub use xkbcommon::xkb;
 
@@ -107,7 +108,6 @@ macro_rules! wl_container_of {
 pub mod ev;
 pub mod matrix;
 pub mod listener;
-pub mod display;
 pub mod compositor;
 pub mod launcher;
 pub mod launcher_loginw;
@@ -126,7 +126,6 @@ pub mod desktop;
 pub use memoffset::*;
 pub use matrix::*;
 pub use listener::*;
-pub use display::*;
 pub use compositor::*;
 pub use launcher::*;
 pub use launcher_loginw::*;

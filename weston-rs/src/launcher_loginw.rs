@@ -21,7 +21,7 @@ pub struct LoginwLauncher {
 }
 
 impl Launcher for LoginwLauncher {
-    fn connect(compositor: &CompositorRef, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
+    fn connect(compositor: &CompositorRef, event_loop: &mut EventLoopHandle, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
         env::var("LOGINW_FD").ok().and_then(|fdstr| fdstr.parse::<RawFd>().ok()).map(|fd| {
             let sock = Rc::new(Socket::new(fd));
             let req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
@@ -29,7 +29,7 @@ impl Launcher for LoginwLauncher {
             let (resp, _tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
             assert!(resp.typ == LoginwResponseType::LoginwPassedFd);
 
-            let _ = compositor.get_display().get_event_loop().add_fd_event_source(
+            let _ = event_loop.add_fd_event_source(
                 sock.fd,
                 sources::FdEventSourceImpl {
                     ready: |_: &mut EventLoopHandle, &mut (ref sock, ref mut compositor): &mut (Rc<Socket>, &mut CompositorRef), _fd, _| {

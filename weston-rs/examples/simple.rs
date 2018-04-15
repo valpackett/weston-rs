@@ -250,14 +250,14 @@ fn click_activate(p: &mut PointerRef) {
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
 
-    let mut display = Display::new();
-    let mut compositor = Compositor::new(&display);
+    let (mut display, mut event_loop) = create_display();
+    let mut compositor = Compositor::new(&display, &mut event_loop);
 
     compositor.set_xkb_rule_names(None); // defaults to environment variables
 
     // Backend setup
     if env::var("LOGINW_FD").is_ok() {
-        let launcher = LoginwLauncher::connect(&compositor, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
+        let launcher = LoginwLauncher::connect(&compositor, &mut event_loop, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
         compositor.set_launcher(launcher);
         let _backend = DrmBackend::new(&compositor, DrmBackendConfigBuilder::default().build().unwrap());
         let output_api = unsafe { DrmOutputImplRef::from_ptr(compositor.get_drm_output().expect("get_drm_output").as_ptr()) };
@@ -350,12 +350,15 @@ fn main() {
 
     // Set environment for spawned processes (namely, the terminal above)
     env::remove_var("DISPLAY");
-    let sock_name = display.add_socket_auto();
-    unsafe { libc::setenv(ffi::CString::new("WAYLAND_DISPLAY").expect("CString").as_ptr(), sock_name.as_ptr(), 1); }
+    let sock_name = display.add_socket_auto().expect("add_socket_auto");
+    use std::os::unix::ffi::OsStrExt;
+    unsafe { libc::setenv(
+            ffi::CString::new("WAYLAND_DISPLAY").expect("CString").as_ptr(),
+            sock_name.as_bytes().first().unwrap() as *const u8 as *const _, 1); }
 
     // Go!
     compositor.wake();
     COMPOSITOR.set(compositor).expect("compositor MutStatic set");
     DESKTOP.set(desktop).expect("desktop MutStatic set");
-    display.run();
+    event_loop.run();
 }

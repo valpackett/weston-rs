@@ -8,10 +8,11 @@ use libweston_sys::{
     weston_compositor,
 };
 use foreign_types::ForeignTypeRef;
+use wayland_server::{EventLoop, EventLoopHandle};
 use ::compositor::CompositorRef;
 
 pub trait Launcher where Self: Sized {
-    fn connect(compositor: &CompositorRef, tty: libc::c_int, seat_id: &CStr, sync_drm: bool) -> Option<Self>;
+    fn connect(compositor: &CompositorRef, event_loop: &mut EventLoopHandle, tty: libc::c_int, seat_id: &CStr, sync_drm: bool) -> Option<Self>;
     fn open(&mut self, path: &CStr, flags: libc::c_int) -> RawFd;
     fn close(&mut self, fd: RawFd);
     fn activate_vt(&mut self, vt: libc::c_int) -> bool;
@@ -49,7 +50,13 @@ extern "C" fn run_connect<T: Launcher>(
     tty: libc::c_int,
     seat_id: *const libc::c_char,
     sync_drm: bool) -> libc::c_int {
-    if let Some(launcher) = T::connect(unsafe { CompositorRef::from_ptr(compositor) }, tty, unsafe { CStr::from_ptr(seat_id) }, sync_drm) {
+    if let Some(launcher) = T::connect(
+        unsafe { CompositorRef::from_ptr(compositor) },
+        unsafe { &mut *((*compositor).user_data as *mut EventLoop) },
+        tty,
+        unsafe { CStr::from_ptr(seat_id) },
+        sync_drm
+    ) {
         unsafe { *launcher_out = launcher.into_weston() };
         0
     } else {
