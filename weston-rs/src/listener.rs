@@ -5,7 +5,7 @@ use wayland_sys::server::{signal, wl_signal, wl_listener, wl_list_init};
 
 pub struct WlListener<T: ForeignTypeRef> {
     cb: Box<FnMut(&mut T)>,
-    wll: wl_listener,
+    pub wll: wl_listener,
 }
 
 #[allow(unused_unsafe)]

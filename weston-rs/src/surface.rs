@@ -8,6 +8,7 @@ use libweston_sys::{
     weston_surface_get_main_surface,
 };
 use wayland_sys::server::wl_signal;
+use wayland_server::Resource;
 use foreign_types::{ForeignType, ForeignTypeRef};
 use ::compositor::CompositorRef;
 use ::output::OutputRef;
@@ -29,6 +30,7 @@ impl SurfaceRef {
     obj_accessors!(SurfaceRef | main_surface main_surface_mut = |&this| { weston_surface_get_main_surface(this.as_ptr()) });
     obj_accessors!(OutputRef | output output_mut= |&this| { (*this.as_ptr()).output });
     obj_accessors!(CompositorRef | compositor compositor_mut = |&this| { (*this.as_ptr()).compositor });
+    //obj_accessors!(Resource | resource resource_mut = |&this| { (*this.as_ptr()).resource });
     prop_accessors!(u32 | output_mask);
     prop_accessors!(i32 | width, height);
     prop_accessors!(ptr wl_signal | destroy_signal, commit_signal);

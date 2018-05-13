@@ -13,7 +13,7 @@ const_cstr!{
 
 pub trait WindowedOutput {
     fn output_set_size(&self, output: &OutputRef, width: u32, height: u32) -> bool;
-    fn output_create(&self, compositor: &CompositorRef, name: &str) -> bool;
+    fn create_head(&self, compositor: &CompositorRef, name: &str) -> bool;
 }
 
 // The API impl is not a create/destroy thing really
@@ -31,9 +31,9 @@ impl WindowedOutput for WindowedOutputImplRef {
         unsafe { (*self.as_ptr()).output_set_size.expect("output_set_size ptr")(output.as_ptr(), width as _, height as _) == 0 }
     }
 
-    fn output_create(&self, compositor: &CompositorRef, name: &str) -> bool {
+    fn create_head(&self, compositor: &CompositorRef, name: &str) -> bool {
         let name = ffi::CString::new(name).expect("CString");
-        unsafe { (*self.as_ptr()).output_create.expect("output_create ptr")(compositor.as_ptr(), name.as_ptr()) == 0 }
+        unsafe { (*self.as_ptr()).create_head.expect("create_head ptr")(compositor.as_ptr(), name.as_ptr()) == 0 }
     }
 }
 

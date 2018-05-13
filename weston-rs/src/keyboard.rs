@@ -11,7 +11,7 @@ use libweston_sys::{
     weston_led_LED_SCROLL_LOCK,
     weston_keyboard_grab, weston_keyboard_grab_interface,
     weston_keyboard_start_grab, weston_keyboard_end_grab,
-    weston_keyboard, weston_keyboard_destroy,
+    weston_keyboard,
     weston_keyboard_set_focus, weston_keyboard_set_locks,
     weston_keyboard_has_focus_resource, weston_keyboard_send_key,
     weston_keyboard_send_modifiers,
@@ -107,9 +107,11 @@ extern "C" fn run_cancel<T: KeyboardGrab>(grab: *mut weston_keyboard_grab) {
     wrapper.user.cancel(unsafe { KeyboardRef::from_ptr_mut((*grab).keyboard) });
 }
 
+unsafe fn noop_destroy(_: *mut weston_keyboard) {}
+
 foreign_type! {
     type CType = weston_keyboard;
-    fn drop = weston_keyboard_destroy;
+    fn drop = noop_destroy;
     pub struct Keyboard;
     pub struct KeyboardRef;
 }

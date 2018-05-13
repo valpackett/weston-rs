@@ -7,7 +7,7 @@ use libweston_sys::{
     weston_pointer_grab, weston_pointer_grab_interface,
     weston_pointer_start_grab, weston_pointer_end_grab,
     weston_pointer_set_default_grab,
-    weston_pointer, weston_pointer_destroy,
+    weston_pointer,
     weston_pointer_motion_to_abs, weston_pointer_send_motion,
     weston_pointer_has_focus_resource, weston_pointer_send_button,
     weston_pointer_send_axis, weston_pointer_send_axis_source,
@@ -178,9 +178,11 @@ extern "C" fn run_cancel<T: PointerGrab>(grab: *mut weston_pointer_grab) {
     wrapper.user.cancel(unsafe { PointerRef::from_ptr_mut((*grab).pointer) });
 }
 
+unsafe fn noop_destroy(_: *mut weston_pointer) {}
+
 foreign_type! {
     type CType = weston_pointer;
-    fn drop = weston_pointer_destroy;
+    fn drop = noop_destroy;
     pub struct Pointer;
     pub struct PointerRef;
 }

@@ -1,18 +1,38 @@
+use std::ptr;
 use libc;
 use libweston_sys::{
     weston_output,
     weston_output_set_scale, weston_output_set_extra_scale, weston_output_set_transform,
-    weston_output_enable, weston_output_disable,
-    weston_output_release
+    weston_output_enable, weston_output_disable, weston_output_destroy,
+    weston_output_iterate_heads, weston_head,
 };
 use wayland_sys::server::wl_signal;
 use foreign_types::ForeignTypeRef;
+use ::head::HeadRef;
 
 foreign_type! {
     type CType = weston_output;
-    fn drop = weston_output_release;
+    fn drop = weston_output_destroy;
     pub struct Output;
     pub struct OutputRef;
+}
+
+pub struct HeadIterator<'a> {
+    output: &'a OutputRef,
+    head: *mut weston_head,
+}
+
+impl<'a> Iterator for HeadIterator<'a> {
+    type Item = &'a mut HeadRef;
+
+    fn next(&mut self) -> Option<&'a mut HeadRef> {
+        self.head = unsafe { weston_output_iterate_heads(self.output.as_ptr(), self.head) };
+        if self.head.is_null() {
+            None
+        } else {
+            Some(unsafe { HeadRef::from_ptr_mut(self.head) })
+        }
+    }
 }
 
 impl OutputRef {
@@ -36,5 +56,12 @@ impl OutputRef {
 
     pub fn disable(&mut self) {
         unsafe { weston_output_disable(self.as_ptr()); }
+    }
+
+    pub fn iterate_heads<'a>(&'a mut self) -> HeadIterator<'a> {
+        HeadIterator {
+            output: self,
+            head: ptr::null_mut(),
+        }
     }
 }

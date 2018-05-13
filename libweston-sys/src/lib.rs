@@ -22,5 +22,6 @@ pub type wl_data_device_manager_dnd_action = libc::c_uint;
 pub type wl_pointer_button_state = libc::c_uint;
 pub type wl_keyboard_key_state = libc::c_uint;
 pub type wl_output_transform = libc::c_uint;
+pub type wl_output_subpixel = libc::c_uint;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));

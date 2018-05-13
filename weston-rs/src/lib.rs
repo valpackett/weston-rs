@@ -95,7 +95,21 @@ macro_rules! obj_accessors {
                 }
             }
         )+
+    };
+    (opt $typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
+        $(
+            #[inline] pub fn $prop<'a>(&'a self) -> Option<$typ> {
+                use foreign_types::ForeignType;
+                let ptr = unsafe { let $self = &self; $acc };
+                if ptr.is_null() {
+                    None
+                } else {
+                    Some(unsafe { $typ::from_ptr({ let $self = &self; $acc }) })
+                }
+            }
+        )+
     }
+
 }
 
 #[macro_export]
@@ -114,6 +128,7 @@ pub mod launcher_loginw;
 pub mod backend;
 pub mod output_api;
 pub mod output;
+pub mod head;
 pub mod seat;
 pub mod pointer;
 pub mod keyboard;
@@ -132,6 +147,7 @@ pub use launcher_loginw::*;
 pub use backend::*;
 pub use output_api::*;
 pub use output::*;
+pub use head::*;
 pub use seat::*;
 pub use pointer::*;
 pub use keyboard::*;

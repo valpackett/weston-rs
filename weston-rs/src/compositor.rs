@@ -1,11 +1,11 @@
-use std::ptr;
+use std::{ptr, mem};
 use libc;
 use libweston_sys::{
     weston_compositor, weston_compositor_create, weston_compositor_destroy,
     weston_compositor_shutdown,
     weston_compositor_set_xkb_rule_names,
     weston_compositor_wake, weston_compositor_schedule_repaint,
-    weston_pending_output_coldplug,
+    weston_compositor_flush_heads_changed, weston_compositor_add_heads_changed_listener,
     weston_seat,
     weston_binding, weston_compositor_add_key_binding,
     weston_compositor_add_modifier_binding, weston_compositor_add_button_binding,
@@ -14,8 +14,10 @@ use libweston_sys::{
     weston_compositor_run_key_binding, weston_compositor_run_modifier_binding,
     weston_compositor_run_button_binding, weston_compositor_run_touch_binding,
     weston_compositor_run_axis_binding, weston_compositor_run_debug_binding,
+    weston_compositor_iterate_heads, weston_compositor_create_output_with_head,
     weston_keyboard, weston_keyboard_modifier, weston_pointer, weston_touch,
     weston_pointer_axis_event,
+    weston_head,
 };
 use xkbcommon::xkb;
 use xkbcommon::xkb::ffi::{xkb_rule_names, xkb_context_ref};
@@ -24,10 +26,13 @@ use foreign_types::{ForeignType, ForeignTypeRef};
 use wayland_server::{Display, EventLoop};
 use ::layer::LayerRef;
 use ::launcher::Launcher;
+use ::listener::WlListener;
 use ::seat::SeatRef;
 use ::pointer::{PointerRef, PointerAxisEvent, Axis};
 use ::keyboard::{KeyboardRef, KeyboardModifier};
 use ::touch::TouchRef;
+use ::output::Output;
+use ::head::HeadRef;
 
 /// Opaque reference to a key/modifier/button/touch/axis/debug binding.
 /// Hold on to it if you want to later destroy the binding.
@@ -56,6 +61,24 @@ extern "C" fn run_touch_binding<F: FnMut(&mut TouchRef, &libc::timespec)>(touch:
 extern "C" fn run_axis_binding<F: FnMut(&mut PointerRef, &libc::timespec, PointerAxisEvent)>(pointer: *mut weston_pointer, time: *const libc::timespec, event: *mut weston_pointer_axis_event , data: *mut libc::c_void) {
     let cb = unsafe { &mut *(data as *mut F) };
     cb(unsafe { PointerRef::from_ptr_mut(pointer) }, unsafe { &*time }, unsafe { &*event }.into());
+}
+
+pub struct HeadIterator<'a> {
+    compositor: &'a CompositorRef,
+    head: *mut weston_head,
+}
+
+impl<'a> Iterator for HeadIterator<'a> {
+    type Item = &'a mut HeadRef;
+
+    fn next(&mut self) -> Option<&'a mut HeadRef> {
+        self.head = unsafe { weston_compositor_iterate_heads(self.compositor.as_ptr(), self.head) };
+        if self.head.is_null() {
+            None
+        } else {
+            Some(unsafe { HeadRef::from_ptr_mut(self.head) })
+        }
+    }
 }
 
 foreign_type! {
@@ -89,7 +112,7 @@ impl CompositorRef {
     prop_accessors!(
         ptr wl_signal | destroy_signal, create_surface_signal, activate_signal, transform_signal,
         kill_signal, idle_signal, wake_signal, show_input_panel_signal, hide_input_panel_signal,
-        update_input_panel_signal, seat_created_signal, output_pending_signal, output_created_signal,
+        update_input_panel_signal, seat_created_signal, heads_changed_signal, output_created_signal,
         output_destroyed_signal, output_moved_signal, output_resized_signal, session_signal);
     prop_accessors!(i32 | kb_repeat_rate, kb_repeat_delay);
 
@@ -113,8 +136,27 @@ impl CompositorRef {
         unsafe { weston_compositor_schedule_repaint(self.as_ptr()); }
     }
 
-    pub fn pending_output_coldplug(&mut self) {
-        unsafe { weston_pending_output_coldplug(self.as_ptr()); }
+    pub fn flush_heads_changed(&mut self) {
+        unsafe { weston_compositor_flush_heads_changed(self.as_ptr()); }
+    }
+
+    pub fn add_heads_changed_listener(&mut self, mut listener: mem::ManuallyDrop<Box<WlListener<CompositorRef>>>) {
+        unsafe { weston_compositor_add_heads_changed_listener(self.as_ptr(), &mut listener.wll); }
+    }
+
+    pub fn iterate_heads<'a>(&'a mut self) -> HeadIterator<'a> {
+        HeadIterator {
+            compositor: self,
+            head: ptr::null_mut(),
+        }
+    }
+
+    pub fn create_output_with_head(&mut self, head: &mut HeadRef) -> Option<Output> {
+        let ptr = unsafe { weston_compositor_create_output_with_head(self.as_ptr(), head.as_ptr()) };
+        if ptr.is_null() {
+            return None
+        }
+        Some(unsafe { Output::from_ptr(ptr) })
     }
 
     pub fn wake(&mut self) {

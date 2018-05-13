@@ -247,6 +247,41 @@ fn click_activate(p: &mut PointerRef) {
     }
 }
 
+enum SelectedBackend {
+    Drm(DrmOutputImpl),
+    Windowed(WindowedOutputImpl),
+}
+
+fn head_enable(compositor: &mut CompositorRef, head: &mut HeadRef, be: &SelectedBackend) {
+    if head.output().is_some() {
+        return
+    }
+    if let Some(mut output) = compositor.create_output_with_head(head) {
+        match be {
+            SelectedBackend::Drm(output_api) => {
+                output_api.set_mode(&output, DrmBackendOutputMode::Current, None);
+                output.set_scale(1);
+                output.set_extra_scale(1.0);
+                output.set_transform(0);
+                output_api.set_gbm_format(&output, None);
+            },
+            SelectedBackend::Windowed(output_api) => {
+                output.set_scale(1);
+                output.set_extra_scale(1.0);
+                output.set_transform(0);
+                output_api.output_set_size(&output, 1280, 720);
+            },
+        }
+        if !output.enable() {
+            eprintln!("Could not enable output for head {:?}\n", head.get_name());
+        } else {
+            let _ = mem::ManuallyDrop::new(output); // keep (do not destroy)
+        }
+    } else {
+        eprintln!("Could not create an output for head {:?}\n", head.get_name());
+    }
+}
+
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
 
@@ -255,33 +290,35 @@ fn main() {
 
     compositor.set_xkb_rule_names(None); // defaults to environment variables
 
-    // Backend setup
+    // Backend/head/output setup
+    // Not pictured here: output destruction on last head destruction (`wet_head_tracker_create`)
+    let be;
     if env::var("LOGINW_FD").is_ok() {
         let launcher = LoginwLauncher::connect(&compositor, &mut event_loop, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
         compositor.set_launcher(launcher);
         let _backend = DrmBackend::new(&compositor, DrmBackendConfigBuilder::default().build().unwrap());
-        let output_api = unsafe { DrmOutputImplRef::from_ptr(compositor.get_drm_output().expect("get_drm_output").as_ptr()) };
-        WlListener::new(Box::new(move |ou: &mut OutputRef| {
-            output_api.set_mode(&ou, DrmBackendOutputMode::Current, None);
-            ou.set_scale(1);
-            ou.set_extra_scale(1.0);
-            ou.set_transform(0);
-            output_api.set_gbm_format(&ou, None);
-            ou.enable();
-        })).signal_add(compositor.output_pending_signal());
+        let output_api = unsafe { DrmOutputImpl::from_ptr(compositor.get_drm_output().expect("get_drm_output").as_ptr()) };
+        be = SelectedBackend::Drm(output_api);
     } else {
         let _backend = WaylandBackend::new(&compositor, WaylandBackendConfigBuilder::default().build().unwrap());
-        let output_api = unsafe { WindowedOutputImplRef::from_ptr(compositor.get_windowed_output().expect("get_windowed_output").as_ptr()) };
-        output_api.output_create(&compositor, "weston-rs simple example");
-        WlListener::new(Box::new(move |ou: &mut OutputRef| {
-            ou.set_scale(1);
-            ou.set_extra_scale(1.0);
-            ou.set_transform(0);
-            output_api.output_set_size(&ou, 1280, 720);
-            ou.enable();
-        })).signal_add(compositor.output_pending_signal());
+        let output_api = unsafe { WindowedOutputImpl::from_ptr(compositor.get_windowed_output().expect("get_windowed_output").as_ptr()) };
+        output_api.create_head(&compositor, "weston-rs simple example");
+        be = SelectedBackend::Windowed(output_api);
     }
-    compositor.pending_output_coldplug();
+    compositor.add_heads_changed_listener(WlListener::new(Box::new(move |compositor: &mut CompositorRef| {
+        let compositor_ = unsafe { CompositorRef::from_ptr_mut(compositor.as_ptr()) };
+        for head in compositor.iterate_heads() {
+            if head.is_connected() && !head.is_enabled() {
+                head_enable(compositor_, head, &be);
+            } else if !head.is_connected() && head.is_enabled() {
+                drop(head.output_owned());
+            } else if head.is_enabled() && head.is_device_changed() {
+                eprintln!("Detected monitor change on head '{:?}'\n", head.get_name());
+            }
+            head.reset_device_changed();
+        }
+    })));
+    compositor.flush_heads_changed();
 
     // Background color
     let mut bg_layer = Layer::new(&compositor);

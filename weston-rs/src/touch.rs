@@ -2,7 +2,7 @@ use libc;
 use libweston_sys::{
     weston_touch_grab, weston_touch_grab_interface,
     weston_touch_start_grab, weston_touch_end_grab,
-    weston_touch, weston_touch_destroy,
+    weston_touch,
     weston_touch_set_focus, weston_touch_has_focus_resource,
     weston_touch_send_down, weston_touch_send_up,
     weston_touch_send_motion, weston_touch_send_frame,
@@ -72,9 +72,11 @@ extern "C" fn run_cancel<T: TouchGrab>(grab: *mut weston_touch_grab) {
     wrapper.user.cancel(unsafe { TouchRef::from_ptr_mut((*grab).touch) });
 }
 
+unsafe fn noop_destroy(_: *mut weston_touch) {}
+
 foreign_type! {
     type CType = weston_touch;
-    fn drop = weston_touch_destroy;
+    fn drop = noop_destroy;
     pub struct Touch;
     pub struct TouchRef;
 }
