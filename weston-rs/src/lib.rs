@@ -18,13 +18,16 @@ extern crate memoffset;
 extern crate bitflags;
 #[macro_use]
 extern crate derive_builder;
+#[macro_use]
+extern crate lazy_static;
+extern crate mut_static;
 extern crate loginw;
 
 pub use foreign_types::{ForeignType, ForeignTypeRef};
 pub use wayland_sys::common::{
     wl_fixed_from_int, wl_fixed_to_int, wl_fixed_to_double, wl_fixed_from_double
 };
-pub use wayland_server::{Display, EventLoop, create_display};
+pub use wayland_server::{Display, EventLoop};
 pub use wayland_server::protocol::wl_shell_surface::{Resize, Transient};
 pub use xkbcommon::xkb;
 

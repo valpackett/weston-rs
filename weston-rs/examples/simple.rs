@@ -285,7 +285,7 @@ fn head_enable(compositor: &mut CompositorRef, head: &mut HeadRef, be: &Selected
 fn main() {
     weston_rs::log_set_handler(wlog, wlog_continue);
 
-    let (mut display, mut event_loop) = create_display();
+    let (mut display, mut event_loop) = Display::new();
     let mut compositor = Compositor::new(&display, &mut event_loop);
 
     compositor.set_xkb_rule_names(None); // defaults to environment variables

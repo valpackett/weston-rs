@@ -94,7 +94,7 @@ impl Compositor {
     pub fn new(display: &Display, event_loop: *mut EventLoop) -> Compositor {
         let ptr = unsafe {
             // The event loop is stored as user data. Used in launcher callbacks.
-            weston_compositor_create(display.ptr(), event_loop as *mut _)
+            weston_compositor_create(display.c_ptr(), event_loop as *mut _)
         };
         // TODO check ptr != null
         let mut result = unsafe { Compositor::from_ptr(ptr) };

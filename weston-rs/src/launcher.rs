@@ -8,11 +8,11 @@ use libweston_sys::{
     weston_compositor,
 };
 use foreign_types::ForeignTypeRef;
-use wayland_server::{EventLoop, EventLoopHandle};
+use wayland_server::EventLoop;
 use ::compositor::CompositorRef;
 
 pub trait Launcher where Self: Sized {
-    fn connect(compositor: &CompositorRef, event_loop: &mut EventLoopHandle, tty: libc::c_int, seat_id: &CStr, sync_drm: bool) -> Option<Self>;
+    fn connect(compositor: &CompositorRef, event_loop: &mut EventLoop, tty: libc::c_int, seat_id: &CStr, sync_drm: bool) -> Option<Self>;
     fn open(&mut self, path: &CStr, flags: libc::c_int) -> RawFd;
     fn close(&mut self, fd: RawFd);
     fn activate_vt(&mut self, vt: libc::c_int) -> bool;

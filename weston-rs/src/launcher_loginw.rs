@@ -1,38 +1,50 @@
 use libc;
 use std::env;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::io::Write;
 use std::ffi::CStr;
 use std::os::raw;
 use std::os::unix::io::RawFd;
-use foreign_types::ForeignTypeRef;
-use ::compositor::CompositorRef;
+use std::collections::HashMap;
+use mut_static::MutStatic;
+use foreign_types::{ForeignType, ForeignTypeRef};
+use ::compositor::{Compositor, CompositorRef};
 use ::launcher::Launcher;
 
 use wayland_sys::server::signal::wl_signal_emit;
-use wayland_server::{sources, EventLoopHandle};
+use wayland_server::{sources, EventLoop};
 use loginw::protocol::*;
 use loginw::socket::*;
 
+// static closure (or custom impl) is required, so we pass the state through this global thing
+lazy_static! {
+    static ref LW_STATE: MutStatic<HashMap<RawFd, (Arc<Socket>, Compositor)>> = MutStatic::from(HashMap::new());
+}
+
 pub struct LoginwLauncher {
-    sock: Rc<Socket>,
+    sock: Arc<Socket>,
     // tty_fd: RawFd,
     vt_num: libc::c_int,
 }
 
 impl Launcher for LoginwLauncher {
-    fn connect(compositor: &CompositorRef, event_loop: &mut EventLoopHandle, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
+    fn connect(compositor: &CompositorRef, event_loop: &mut EventLoop, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
         env::var("LOGINW_FD").ok().and_then(|fdstr| fdstr.parse::<RawFd>().ok()).map(|fd| {
-            let sock = Rc::new(Socket::new(fd));
+            let sock = Arc::new(Socket::new(fd));
             let req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
             sock.sendmsg(&req, None).expect(".sendmsg()");
             let (resp, _tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
             assert!(resp.typ == LoginwResponseType::LoginwPassedFd);
 
-            let _ = event_loop.add_fd_event_source(
+            LW_STATE.write().expect("LW_STATE write")
+                .insert(sock.fd, (Arc::clone(&sock), unsafe { Compositor::from_ptr(compositor.as_ptr()) }));
+            let _ = event_loop.token().add_fd_event_source(
                 sock.fd,
-                sources::FdEventSourceImpl {
-                    ready: |_: &mut EventLoopHandle, &mut (ref sock, ref mut compositor): &mut (Rc<Socket>, &mut CompositorRef), _fd, _| {
+                sources::FdInterest::READ,
+                |ev, _| {
+                    if let sources::FdEvent::Ready { fd, mask: _ } = ev {
+                        let mut lw_state = LW_STATE.write().expect("state .write()");
+                        let (ref mut sock, ref mut compositor) = lw_state.get_mut(&fd).expect("state .get_mut()");
                         let (resp, _) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
                         match resp.typ {
                             LoginwResponseType::LoginwActivated => {
@@ -43,16 +55,10 @@ impl Launcher for LoginwLauncher {
                                 compositor.set_session_active(false);
                                 unsafe { wl_signal_emit(compositor.session_signal(), compositor.as_ptr() as *mut raw::c_void); }
                             },
-                            _ => {
-                            },
+                            _ => (),
                         }
-                    },
-                    error: |_: &mut EventLoopHandle, _, _fd, _| {
-                        // TODO: restore the tty
-                    },
-                },
-                (Rc::clone(&sock), unsafe { CompositorRef::from_ptr_mut(compositor.as_ptr()) }),
-                sources::FdInterest::READ,
+                    }
+                }
             );
 
             LoginwLauncher {
