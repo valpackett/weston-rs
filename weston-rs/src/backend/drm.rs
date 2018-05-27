@@ -44,6 +44,7 @@ impl Into<weston_drm_backend_config> for DrmBackendConfig {
             configure_device,
             pageflip_timeout,
             specific_device: specific_device.map(|s| ffi::CString::new(s).expect("CString::new").into_raw()).unwrap_or(ptr::null_mut()),
+            use_pixman_shadow: true,
         }
     }
 }
