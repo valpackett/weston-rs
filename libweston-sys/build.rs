@@ -77,6 +77,7 @@ fn main() {
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "viewporter");
     wayland_scan_pkg(&wayland_scanner, &wayland_protos, "presentation-time");
     wayland_scan_local(&wayland_scanner, "text-cursor-position");
+    wayland_scan_local(&wayland_scanner, "weston-touch-calibration");
 
     let mut libweston_build = cc::Build::new();
     libweston_build.files(vec![
@@ -90,6 +91,7 @@ fn main() {
                           "weston/libweston/launcher-util.c",
                           "weston/libweston/launcher-direct.c",
                           "weston/libweston/launcher-weston-launch.c",
+                          "weston/libweston/touch-calibration.c",
                           "weston/libweston/input.c",
                           "weston/libweston/libinput-device.c",
                           "weston/libweston/libinput-seat.c",
