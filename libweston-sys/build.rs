@@ -132,7 +132,7 @@ fn main() {
         .flag_if_supported("-Wno-missing-field-initializers")
         .flag_if_supported("-fstack-protector-strong")
         .flag_if_supported("-fvisibility=hidden")
-        .flag_if_supported("-flto=thin")
+        .flag_if_supported("-flto")
         .flag_if_supported("-fsanitize=cfi,safe-stack");
     include_pkg!(libweston_build << libdrm);
     include_pkg!(libweston_build << libudev);
@@ -171,7 +171,7 @@ fn main() {
         .flag_if_supported("-Wno-missing-field-initializers")
         .flag_if_supported("-fstack-protector-strong")
         .flag_if_supported("-fvisibility=hidden")
-        .flag_if_supported("-flto=thin")
+        .flag_if_supported("-flto")
         .flag_if_supported("-fsanitize=cfi,safe-stack");
     include_pkg!(libweston_desktop_build << pixman);
     include_pkg!(libweston_desktop_build << wayland_server);

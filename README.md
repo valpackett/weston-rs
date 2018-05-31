@@ -6,10 +6,11 @@
 Featuring:
 
 - custom `build.rs` build with libweston statically linked — no autoconf, no shared library plugins
+  - you can do cross-language link-time optimization with `RUSTFLAGS="-Zcross-lang-lto"` (on nightly Rust)!
   - (TODO: support system installed libweston too)
 - [slightly modified libweston](https://github.com/valpackett/weston) (aside from the static linking support, it includes support for running on FreeBSD)
 - nice Rusty wrappers for stuff
-- support for the [loginw] a setuid launcher-wrapper
+- support for the [loginw] setuid launcher-wrapper (which is like `weston-launch` but with a public API)
 
 [Rust]: https://www.rust-lang.org
 [Weston]: https://cgit.freedesktop.org/wayland/weston/
