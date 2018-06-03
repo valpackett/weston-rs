@@ -294,7 +294,7 @@ fn main() {
     // Not pictured here: output destruction on last head destruction (`wet_head_tracker_create`)
     let be;
     if env::var("LOGINW_FD").is_ok() {
-        let launcher = LoginwLauncher::connect(&compositor, &mut event_loop, 0, &std::ffi::CString::new("default").unwrap(), false).expect("connect");
+        let launcher = LoginwLauncher::connect(&compositor, &mut event_loop, 0, &ffi::CString::new("default").unwrap(), false).expect("connect");
         compositor.set_launcher(launcher);
         let _backend = DrmBackend::new(&compositor, DrmBackendConfigBuilder::default().build().unwrap());
         let output_api = unsafe { DrmOutputImpl::from_ptr(compositor.get_drm_output().expect("get_drm_output").as_ptr()) };
@@ -388,10 +388,7 @@ fn main() {
     // Set environment for spawned processes (namely, the terminal above)
     env::remove_var("DISPLAY");
     let sock_name = display.add_socket_auto().expect("add_socket_auto");
-    use std::os::unix::ffi::OsStrExt;
-    unsafe { libc::setenv(
-            ffi::CString::new("WAYLAND_DISPLAY").expect("CString").as_ptr(),
-            sock_name.as_bytes().first().unwrap() as *const u8 as *const _, 1); }
+    env::set_var("WAYLAND_DISPLAY", sock_name);
 
     // Go!
     compositor.wake();
