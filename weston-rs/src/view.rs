@@ -44,9 +44,9 @@ impl View {
 }
 
 impl ViewRef {
-    obj_accessors!(ViewRef | parent_view parent_view_mut = |&this| { (*this.as_ptr()).parent_view });
+    obj_accessors!(opt ViewRef | parent_view parent_view_mut = |&this| { (*this.as_ptr()).parent_view });
     obj_accessors!(SurfaceRef | surface surface_mut = |&this| { (*this.as_ptr()).surface });
-    obj_accessors!(OutputRef | output output_mut = |&this| { (*this.as_ptr()).output });
+    obj_accessors!(opt OutputRef | output output_mut = |&this| { (*this.as_ptr()).output });
     prop_accessors!(ptr weston_layer_entry | layer_link);
     prop_accessors!(ptr wl_signal | destroy_signal);
 

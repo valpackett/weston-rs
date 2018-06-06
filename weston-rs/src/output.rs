@@ -36,6 +36,9 @@ impl<'a> Iterator for HeadIterator<'a> {
 }
 
 impl OutputRef {
+    prop_accessors!(i32 | x, y, width, height, native_scale, current_scale, original_scale);
+    prop_accessors!(libc::c_int | scale);
+    prop_accessors!(f32 | extra_scale, current_extra_scale);
     prop_accessors!(ptr wl_signal | frame_signal, destroy_signal);
 
     pub fn set_scale(&mut self, scale: libc::c_int) {

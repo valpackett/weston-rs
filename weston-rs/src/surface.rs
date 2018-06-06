@@ -31,7 +31,7 @@ impl Surface {
 
 impl SurfaceRef {
     obj_accessors!(SurfaceRef | main_surface main_surface_mut = |&this| { weston_surface_get_main_surface(this.as_ptr()) });
-    obj_accessors!(OutputRef | output output_mut = |&this| { (*this.as_ptr()).output });
+    obj_accessors!(opt OutputRef | output output_mut = |&this| { (*this.as_ptr()).output });
     obj_accessors!(CompositorRef | compositor compositor_mut = |&this| { (*this.as_ptr()).compositor });
     //obj_accessors!(Resource | resource resource_mut = |&this| { (*this.as_ptr()).resource });
     prop_accessors!(u32 | output_mask);
@@ -89,6 +89,10 @@ impl SurfaceRef {
             (*self.as_ptr()).committed_private = Box::into_raw(Box::new((cb, user_data))) as *mut libc::c_void;
             (*self.as_ptr()).committed = Some(run_callback::<D, T>);
         }
+    }
+
+    pub unsafe fn committed_private_mut<D>(&self) -> &mut D {
+        &mut *((*self.as_ptr()).committed_private as *mut D)
     }
 }
 
