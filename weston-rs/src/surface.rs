@@ -85,15 +85,18 @@ impl SurfaceRef {
     }
 
     /// Captures the surface's buffer contents (a given rectangle in buffer coordinates) as a8b8g8r8 pixels.
-    pub fn copy_content(&self, src_x: libc::c_int, src_y: libc::c_int, width: libc::c_int, height: libc::c_int) -> Vec<u8> {
+    pub fn copy_content(&self, src_x: libc::c_int, src_y: libc::c_int, width: libc::c_int, height: libc::c_int) -> Option<Vec<u8>> {
         let size = width as usize * height as usize * 4; // 4bpp: a8b8g8r8
         let mut buf = vec![0; size];
-        unsafe { weston_surface_copy_content(self.as_ptr(), buf.as_mut_ptr() as *mut _, size, src_x, src_y, width, height); }
-        buf
+        if unsafe { weston_surface_copy_content(self.as_ptr(), buf.as_mut_ptr() as *mut _, size, src_x, src_y, width, height) } == 0 {
+            Some(buf)
+        } else {
+            None
+        }
     }
 
     /// Captures the surface's buffer contents (the whole thing) as a8b8g8r8 pixels.
-    pub fn copy_content_all(&self) -> Vec<u8> {
+    pub fn copy_content_all(&self) -> Option<Vec<u8>> {
         let (width, height) = self.get_content_size();
         self.copy_content(0, 0, width, height)
     }
