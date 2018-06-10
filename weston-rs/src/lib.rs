@@ -21,6 +21,7 @@ extern crate derive_builder;
 #[macro_use]
 extern crate lazy_static;
 extern crate mut_static;
+extern crate tiny_nix_ipc;
 extern crate loginw;
 
 pub use foreign_types::{ForeignType, ForeignTypeRef};

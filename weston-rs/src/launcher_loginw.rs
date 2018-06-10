@@ -4,9 +4,10 @@ use std::sync::Arc;
 use std::io::Write;
 use std::ffi::CStr;
 use std::os::raw;
-use std::os::unix::io::RawFd;
+use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::collections::HashMap;
 use mut_static::MutStatic;
+use tiny_nix_ipc::Socket;
 use foreign_types::{ForeignType, ForeignTypeRef};
 use ::compositor::{Compositor, CompositorRef};
 use ::launcher::Launcher;
@@ -14,7 +15,6 @@ use ::launcher::Launcher;
 use wayland_sys::server::signal::wl_signal_emit;
 use wayland_server::{sources, EventLoop};
 use loginw::protocol::*;
-use loginw::socket::*;
 
 // static closure (or custom impl) is required, so we pass the state through this global thing
 lazy_static! {
@@ -30,22 +30,24 @@ pub struct LoginwLauncher {
 impl Launcher for LoginwLauncher {
     fn connect(compositor: &CompositorRef, event_loop: &mut EventLoop, _tty: libc::c_int, _seat_id: &CStr, _sync_drm: bool) -> Option<Self> {
         env::var("LOGINW_FD").ok().and_then(|fdstr| fdstr.parse::<RawFd>().ok()).map(|fd| {
-            let sock = Arc::new(Socket::new(fd));
+            let mut sock = unsafe { Socket::from_raw_fd(fd) };
             let req = LoginwRequest::new(LoginwRequestType::LoginwAcquireVt);
-            sock.sendmsg(&req, None).expect(".sendmsg()");
-            let (resp, _tty_fd) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
+            sock.send_struct(&req, None).unwrap();
+            let (resp, _tty_fd) = sock.recv_struct::<LoginwResponse, [RawFd; 1]>().unwrap();
             assert!(resp.typ == LoginwResponseType::LoginwPassedFd);
+            let sock = Arc::new(sock);
 
             LW_STATE.write().expect("LW_STATE write")
-                .insert(sock.fd, (Arc::clone(&sock), unsafe { Compositor::from_ptr(compositor.as_ptr()) }));
+                .insert(fd, (Arc::clone(&sock), unsafe { Compositor::from_ptr(compositor.as_ptr()) }));
             let _ = event_loop.token().add_fd_event_source(
-                sock.fd,
+                fd,
                 sources::FdInterest::READ,
                 |ev, _| {
                     if let sources::FdEvent::Ready { fd, mask: _ } = ev {
                         let mut lw_state = LW_STATE.write().expect("state .write()");
-                        let (ref mut sock, ref mut compositor) = lw_state.get_mut(&fd).expect("state .get_mut()");
-                        let (resp, _) = sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
+                        let (ref sock, ref mut compositor) = lw_state.get_mut(&fd).expect("state .get_mut()");
+                        let mut sock = unsafe { Socket::from_raw_fd(sock.as_raw_fd()) }; // Arc can't be mutable
+                        let (resp, _) = sock.recv_struct::<LoginwResponse, [RawFd; 0]>().unwrap();
                         match resp.typ {
                             LoginwResponseType::LoginwActivated => {
                                 compositor.set_session_active(true);
@@ -78,10 +80,11 @@ impl Launcher for LoginwLauncher {
         };
         let mut req = LoginwRequest::new(typ);
         write!(unsafe { &mut req.dat.bytes[..] }, "{}", path).expect("write!()");
-        self.sock.sendmsg(&req, None).expect(".sendmsg()");
-        let (resp, fd) = self.sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
+        let mut sock = unsafe { Socket::from_raw_fd(self.sock.as_raw_fd()) };
+        sock.send_struct(&req, None).unwrap();
+        let (resp, fd) = sock.recv_struct::<LoginwResponse, [RawFd; 1]>().unwrap();
         assert!(resp.typ == LoginwResponseType::LoginwPassedFd);
-        fd.expect("fd")
+        fd.expect("fd")[0]
     }
 
     fn close(&mut self, fd: RawFd) {
@@ -91,8 +94,9 @@ impl Launcher for LoginwLauncher {
     fn activate_vt(&mut self, vt: libc::c_int) -> bool {
         let mut req = LoginwRequest::new(LoginwRequestType::LoginwSwitchVt);
         req.dat.u64 = vt as u64;
-        self.sock.sendmsg(&req, None).expect(".sendmsg()");
-        let (resp, _) = self.sock.recvmsg::<LoginwResponse>().expect(".recvmsg()");
+        let mut sock = unsafe { Socket::from_raw_fd(self.sock.as_raw_fd()) };
+        sock.send_struct(&req, None).unwrap();
+        let (resp, _) = sock.recv_struct::<LoginwResponse, [RawFd; 0]>().unwrap();
         resp.typ == LoginwResponseType::LoginwDone
     }
 
