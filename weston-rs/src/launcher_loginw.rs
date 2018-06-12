@@ -1,5 +1,5 @@
 use libc;
-use std::env;
+use std::{env, mem};
 use std::sync::Arc;
 use std::io::Write;
 use std::ffi::CStr;
@@ -80,7 +80,7 @@ impl Launcher for LoginwLauncher {
         };
         let mut req = LoginwRequest::new(typ);
         write!(unsafe { &mut req.dat.bytes[..] }, "{}", path).expect("write!()");
-        let mut sock = unsafe { Socket::from_raw_fd(self.sock.as_raw_fd()) };
+        let mut sock = mem::ManuallyDrop::new(unsafe { Socket::from_raw_fd(self.sock.as_raw_fd()) });
         sock.send_struct(&req, None).unwrap();
         let (resp, fd) = sock.recv_struct::<LoginwResponse, [RawFd; 1]>().unwrap();
         assert!(resp.typ == LoginwResponseType::LoginwPassedFd);
