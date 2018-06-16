@@ -10,6 +10,10 @@ homepage = "https://github.com/valpackett/weston-rs"
 repository = "https://github.com/valpackett/weston-rs"
 build = "build.rs"
 
+[features]
+default = ["logind"]
+logind = []
+
 [dependencies]
 libc = "0.2"
 wayland-sys = { version = "0", features = ["client", "cursor", "egl", "server"] }

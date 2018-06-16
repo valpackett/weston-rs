@@ -25,3 +25,8 @@ pub type wl_output_transform = libc::c_uint;
 pub type wl_output_subpixel = libc::c_uint;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+#[cfg(all(feature = "logind", target_os = "linux"))]
+extern "C" {
+    pub static launcher_logind_iface: launcher_interface;
+}

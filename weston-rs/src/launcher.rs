@@ -96,5 +96,3 @@ extern "C" fn run_get_vt<T: Launcher>(launcher: *mut weston_launcher) -> libc::c
     let wrapper = unsafe { &mut *wl_container_of!(launcher, LauncherWrapper<T>, base) };
     wrapper.user.get_vt()
 }
-
-// TODO: the inverse of LauncherWrapper, for calling into other launchers from Rust

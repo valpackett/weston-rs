@@ -126,13 +126,25 @@ fn main() {
                           "protos/presentation-time-protocol.c",
                           "protos/text-cursor-position-protocol.c",
     ]);
+    let build_logind = cfg!(target_os="linux") && env::var("CARGO_FEATURE_LOGIND").ok().is_some();
+    if build_logind {
+        libweston_build.file("weston/libweston/dbus.c");
+        libweston_build.file("weston/libweston/launcher-logind.c");
+        let dbus = Config::new().atleast_version("1.6").probe("dbus-1").unwrap();
+        include_pkg!(libweston_build << dbus);
+        libweston_build.flag("-DHAVE_DBUS");
+        // TODO: elogind
+        let systemd = Config::new().atleast_version("209").probe("libsystemd").unwrap();
+        include_pkg!(libweston_build << systemd);
+        libweston_build.flag("-DHAVE_SYSTEMD_LOGIN_209");
+    }
     libweston_build.include("config").include("protos").include("weston/shared").include("weston")
         .flag_if_supported("-Wno-unused-parameter")
         .flag_if_supported("-Wno-shift-negative-value")
         .flag_if_supported("-Wno-missing-field-initializers")
         .flag_if_supported("-fstack-protector-strong")
         .flag_if_supported("-fvisibility=hidden")
-        .flag_if_supported("-flto")
+        .flag_if_supported("-flto=thin")
         .flag_if_supported("-fsanitize=cfi,safe-stack");
     include_pkg!(libweston_build << libdrm);
     include_pkg!(libweston_build << libudev);
@@ -171,7 +183,7 @@ fn main() {
         .flag_if_supported("-Wno-missing-field-initializers")
         .flag_if_supported("-fstack-protector-strong")
         .flag_if_supported("-fvisibility=hidden")
-        .flag_if_supported("-flto")
+        .flag_if_supported("-flto=thin")
         .flag_if_supported("-fsanitize=cfi,safe-stack");
     include_pkg!(libweston_desktop_build << pixman);
     include_pkg!(libweston_desktop_build << wayland_server);

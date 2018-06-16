@@ -18,6 +18,7 @@ use libweston_sys::{
     weston_keyboard, weston_keyboard_modifier, weston_pointer, weston_touch,
     weston_pointer_axis_event,
     weston_head,
+    weston_launcher, launcher_interface,
 };
 use xkbcommon::xkb;
 use xkbcommon::xkb::ffi::{xkb_rule_names, xkb_context_ref};
@@ -122,6 +123,10 @@ impl CompositorRef {
 
     pub fn set_launcher<T: Launcher>(&mut self, launcher: T) {
         unsafe { (*self.as_ptr()).launcher = launcher.into_weston(); }
+    }
+
+    pub fn set_launcher_raw(&mut self, wrapper: *mut weston_launcher) {
+        unsafe { (*self.as_ptr()).launcher = wrapper; }
     }
 
     pub fn get_xkb_context(&self) -> xkb::Context {
