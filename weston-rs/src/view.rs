@@ -4,6 +4,7 @@ use libweston_sys::{
     weston_activate_flag_WESTON_ACTIVATE_FLAG_CONFIGURE,
     weston_activate_flag_WESTON_ACTIVATE_FLAG_CLICKED,
     weston_view, weston_view_create, weston_view_destroy,
+    weston_view_set_output,
     weston_view_set_position, weston_view_set_transform_parent,
     weston_view_set_mask, weston_view_set_mask_infinite,
     weston_view_is_mapped, weston_view_schedule_repaint,
@@ -49,6 +50,10 @@ impl ViewRef {
     obj_accessors!(opt OutputRef | output output_mut = |&this| { (*this.as_ptr()).output });
     prop_accessors!(ptr weston_layer_entry | layer_link);
     prop_accessors!(ptr wl_signal | destroy_signal);
+
+    pub fn set_output(&mut self, output: &OutputRef) {
+        unsafe { weston_view_set_output(self.as_ptr(), output.as_ptr()); }
+    }
 
     pub fn get_position(&self) -> (f32, f32) {
         unsafe { ((*self.as_ptr()).geometry.x, (*self.as_ptr()).geometry.y) }
