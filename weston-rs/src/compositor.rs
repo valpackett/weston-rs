@@ -149,7 +149,7 @@ impl CompositorRef {
         unsafe { weston_compositor_add_heads_changed_listener(self.as_ptr(), &mut listener.wll); }
     }
 
-    pub fn iterate_heads<'a>(&'a mut self) -> HeadIterator<'a> {
+    pub fn iterate_heads(&mut self) -> HeadIterator {
         HeadIterator {
             compositor: self,
             head: ptr::null_mut(),

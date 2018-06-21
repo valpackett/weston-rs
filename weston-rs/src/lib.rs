@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "cargo-clippy", allow(mut_from_ref, wrong_self_convention))]
 pub extern crate libweston_sys;
 pub extern crate wayland_sys;
 pub extern crate wayland_server;
@@ -53,12 +54,12 @@ macro_rules! prop_accessors {
 macro_rules! obj_accessors {
     ($typ:ident | $($prop:ident $prop_mut:ident = |&$self:ident| $acc:block),+) => {
         $(
-            #[inline] pub fn $prop<'a>(&'a self) -> &$typ {
+            #[inline] pub fn $prop(&self) -> &$typ {
                 use foreign_types::ForeignTypeRef;
                 unsafe { $typ::from_ptr({ let $self = &self; $acc }) }
             }
 
-            #[inline] pub fn $prop_mut<'a>(&'a self) -> &mut $typ {
+            #[inline] pub fn $prop_mut(&self) -> &mut $typ {
                 use foreign_types::ForeignTypeRef;
                 unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
             }
@@ -66,12 +67,12 @@ macro_rules! obj_accessors {
     };
     ($typ:ident<$typp:tt> | $($prop:ident $prop_mut:ident = |&$self:ident| $acc:block),+) => {
         $(
-            #[inline] pub fn $prop<'a, $typp>(&'a self) -> &$typ<$typp> {
+            #[inline] pub fn $prop<$typp>(&self) -> &$typ<$typp> {
                 use foreign_types::ForeignTypeRef;
                 unsafe { $typ::from_ptr({ let $self = &self; $acc }) }
             }
 
-            #[inline] pub fn $prop_mut<'a, $typp>(&'a self) -> &mut $typ<$typp> {
+            #[inline] pub fn $prop_mut<$typp>(&self) -> &mut $typ<$typp> {
                 use foreign_types::ForeignTypeRef;
                 unsafe { $typ::from_ptr_mut({ let $self = &self; $acc }) }
             }
@@ -79,7 +80,7 @@ macro_rules! obj_accessors {
     };
     (opt $typ:ident | $($prop:ident $prop_mut:ident = |&$self:ident| $acc:block),+) => {
         $(
-            #[inline] pub fn $prop<'a>(&'a self) -> Option<&$typ> {
+            #[inline] pub fn $prop(&self) -> Option<&$typ> {
                 use foreign_types::ForeignTypeRef;
                 let ptr = unsafe { let $self = &self; $acc };
                 if ptr.is_null() {
@@ -89,7 +90,7 @@ macro_rules! obj_accessors {
                 }
             }
 
-            #[inline] pub fn $prop_mut<'a>(&'a self) -> Option<&mut $typ> {
+            #[inline] pub fn $prop_mut(&self) -> Option<&mut $typ> {
                 use foreign_types::ForeignTypeRef;
                 let ptr = unsafe { let $self = &self; $acc };
                 if ptr.is_null() {
@@ -102,7 +103,7 @@ macro_rules! obj_accessors {
     };
     (opt $typ:ident | $($prop:ident = |&$self:ident| $acc:block),+) => {
         $(
-            #[inline] pub fn $prop<'a>(&'a self) -> Option<$typ> {
+            #[inline] pub fn $prop(&self) -> Option<$typ> {
                 use foreign_types::ForeignType;
                 let ptr = unsafe { let $self = &self; $acc };
                 if ptr.is_null() {
@@ -119,7 +120,7 @@ macro_rules! obj_accessors {
 #[macro_export]
 macro_rules! wl_container_of {
     ($ptr:expr, $type:ty, $member:ident) => {{
-        ($ptr as *mut u8).offset(-1 * offset_of!($type, $member) as isize) as *mut $type
+        ($ptr as *mut ::libc::c_void).offset(-(offset_of!($type, $member) as isize)) as *mut $type
     }}
 }
 

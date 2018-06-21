@@ -61,7 +61,7 @@ impl OutputRef {
         unsafe { weston_output_disable(self.as_ptr()); }
     }
 
-    pub fn iterate_heads<'a>(&'a mut self) -> HeadIterator<'a> {
+    pub fn iterate_heads(&mut self) -> HeadIterator {
         HeadIterator {
             output: self,
             head: ptr::null_mut(),

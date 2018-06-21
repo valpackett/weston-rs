@@ -68,7 +68,7 @@ extern "C" fn run_connect<T: Launcher>(
 extern "C" fn run_destroy<T: Launcher>(launcher: *mut weston_launcher) {
     let wrapper = unsafe { Box::from_raw(wl_container_of!(launcher, LauncherWrapper<T>, base)) };
     unsafe {
-        let iface_ptr = mem::transmute::<*const launcher_interface, *mut launcher_interface>(wrapper.base.iface);
+        let iface_ptr = wrapper.base.iface as *mut launcher_interface;
         Box::from_raw(iface_ptr);
     }
 }

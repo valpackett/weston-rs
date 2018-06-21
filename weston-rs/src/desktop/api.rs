@@ -63,86 +63,86 @@ pub trait DesktopApi<SC> {
     fn set_xwayland_position(&mut self, _surface: &mut DesktopSurfaceRef<SC>, _x: i32, _y: i32) {}
 }
 
-pub extern "C" fn run_ping_timeout<SC>(client: *mut weston_desktop_client, user_data: *mut libc::c_void) {
-    let client = unsafe { DesktopClientRef::from_ptr_mut(client) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_ping_timeout<SC>(client: *mut weston_desktop_client, user_data: *mut libc::c_void) {
+    let client = DesktopClientRef::from_ptr_mut(client);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.ping_timeout(client);
 }
 
-pub extern "C" fn run_pong<SC>(client: *mut weston_desktop_client, user_data: *mut libc::c_void) {
-    let client = unsafe { DesktopClientRef::from_ptr_mut(client) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_pong<SC>(client: *mut weston_desktop_client, user_data: *mut libc::c_void) {
+    let client = DesktopClientRef::from_ptr_mut(client);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.pong(client);
 }
 
-pub extern "C" fn run_surface_added<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_surface_added<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.surface_added(surface);
 }
 
-pub extern "C" fn run_surface_removed<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_surface_removed<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.surface_removed(surface);
 }
 
-pub extern "C" fn run_committed<SC>(surface: *mut weston_desktop_surface, sx: i32, sy: i32, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_committed<SC>(surface: *mut weston_desktop_surface, sx: i32, sy: i32, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.committed(surface, sx, sy);
 }
 
-pub extern "C" fn run_show_window_menu<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, x: i32, y: i32, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let seat = unsafe { SeatRef::from_ptr_mut(seat) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_show_window_menu<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, x: i32, y: i32, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let seat = SeatRef::from_ptr_mut(seat);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.show_window_menu(surface, seat, x, y);
 }
 
-pub extern "C" fn run_set_parent<SC>(surface: *mut weston_desktop_surface, parent: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let parent = unsafe { DesktopSurfaceRef::from_ptr_mut(parent) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_set_parent<SC>(surface: *mut weston_desktop_surface, parent: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let parent = DesktopSurfaceRef::from_ptr_mut(parent);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.set_parent(surface, parent);
 }
 
-pub extern "C" fn run_move<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, serial: u32, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let seat = unsafe { SeatRef::from_ptr_mut(seat) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_move<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, serial: u32, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let seat = SeatRef::from_ptr_mut(seat);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.moove(surface, seat, serial);
 }
 
-pub extern "C" fn run_resize<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, serial: u32, edges: u32, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let seat = unsafe { SeatRef::from_ptr_mut(seat) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_resize<SC>(surface: *mut weston_desktop_surface, seat: *mut weston_seat, serial: u32, edges: u32, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let seat = SeatRef::from_ptr_mut(seat);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.resize(surface, seat, serial, Resize::from_raw(edges).unwrap_or(Resize::None));
 }
 
-pub extern "C" fn run_fullscreen_requested<SC>(surface: *mut weston_desktop_surface, fullscreen: bool, output: *mut weston_output, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let output = unsafe { OutputRef::from_ptr_mut(output) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_fullscreen_requested<SC>(surface: *mut weston_desktop_surface, fullscreen: bool, output: *mut weston_output, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let output = OutputRef::from_ptr_mut(output);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.fullscreen_requested(surface, fullscreen, output);
 }
 
-pub extern "C" fn run_maximized_requested<SC>(surface: *mut weston_desktop_surface, maximized: bool, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_maximized_requested<SC>(surface: *mut weston_desktop_surface, maximized: bool, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.maximized_requested(surface, maximized);
 }
 
-pub extern "C" fn run_minimized_requested<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_minimized_requested<SC>(surface: *mut weston_desktop_surface, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.minimized_requested(surface);
 }
 
-pub extern "C" fn run_set_xwayland_position<SC>(surface: *mut weston_desktop_surface, x: i32, y: i32, user_data: *mut libc::c_void) {
-    let surface = unsafe { DesktopSurfaceRef::from_ptr_mut(surface) };
-    let api = unsafe { &mut *(user_data as *mut Box<DesktopApi<SC>>) };
+pub unsafe extern "C" fn run_set_xwayland_position<SC>(surface: *mut weston_desktop_surface, x: i32, y: i32, user_data: *mut libc::c_void) {
+    let surface = DesktopSurfaceRef::from_ptr_mut(surface);
+    let api = &mut *(user_data as *mut Box<DesktopApi<SC>>);
     api.set_xwayland_position(surface, x, y);
 }
 

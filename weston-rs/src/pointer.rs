@@ -266,6 +266,6 @@ impl PointerRef {
     }
 
     pub fn is_default_grab(&self) -> bool {
-        return unsafe { (*self.as_ptr()).grab == &mut (*self.as_ptr()).default_grab };
+        unsafe { (*self.as_ptr()).grab == &mut (*self.as_ptr()).default_grab }
     }
 }

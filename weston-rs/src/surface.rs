@@ -50,7 +50,7 @@ impl SurfaceRef {
         unsafe { ffi::CStr::from_ptr(weston_surface_get_role(self.as_ptr())) }
     }
 
-    pub fn set_role<S: AsRef<ffi::CStr>, I: Interface>(&mut self, role_name: S, error_resource: Resource<I>, error_code: u32) -> bool {
+    pub fn set_role<S: AsRef<ffi::CStr>, I: Interface>(&mut self, role_name: S, error_resource: &Resource<I>, error_code: u32) -> bool {
         unsafe { weston_surface_set_role(self.as_ptr(), role_name.as_ref().as_ptr(), error_resource.c_ptr(), error_code) == 0 }
     }
 
