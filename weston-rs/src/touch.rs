@@ -42,34 +42,29 @@ struct TouchGrabWrapper<T: TouchGrab> {
     user: T,
 }
 
-#[allow(unused_unsafe)]
-extern "C" fn run_down<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
-    let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
-    wrapper.user.down(unsafe { TouchRef::from_ptr_mut((*grab).touch) }, unsafe { &*time }, touch_id, sx, sy);
+unsafe extern "C" fn run_down<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
+    let wrapper = &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base);
+    wrapper.user.down(TouchRef::from_ptr_mut((*grab).touch), &*time, touch_id, sx, sy);
 }
 
-#[allow(unused_unsafe)]
-extern "C" fn run_up<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int) {
-    let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
-    wrapper.user.up(unsafe { TouchRef::from_ptr_mut((*grab).touch) }, unsafe { &*time }, touch_id);
+unsafe extern "C" fn run_up<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int) {
+    let wrapper = &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base);
+    wrapper.user.up(TouchRef::from_ptr_mut((*grab).touch), &*time, touch_id);
 }
 
-#[allow(unused_unsafe)]
-extern "C" fn run_motion<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
-    let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
-    wrapper.user.motion(unsafe { TouchRef::from_ptr_mut((*grab).touch) }, unsafe { &*time }, touch_id, sx, sy);
+unsafe extern "C" fn run_motion<T: TouchGrab>(grab: *mut weston_touch_grab, time: *const libc::timespec, touch_id: libc::c_int, sx: wl_fixed_t, sy: wl_fixed_t) {
+    let wrapper = &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base);
+    wrapper.user.motion(TouchRef::from_ptr_mut((*grab).touch), &*time, touch_id, sx, sy);
 }
 
-#[allow(unused_unsafe)]
-extern "C" fn run_frame<T: TouchGrab>(grab: *mut weston_touch_grab) {
-    let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
-    wrapper.user.frame(unsafe { TouchRef::from_ptr_mut((*grab).touch) });
+unsafe extern "C" fn run_frame<T: TouchGrab>(grab: *mut weston_touch_grab) {
+    let wrapper = &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base);
+    wrapper.user.frame(TouchRef::from_ptr_mut((*grab).touch));
 }
 
-#[allow(unused_unsafe)]
-extern "C" fn run_cancel<T: TouchGrab>(grab: *mut weston_touch_grab) {
-    let wrapper = unsafe { &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base) };
-    wrapper.user.cancel(unsafe { TouchRef::from_ptr_mut((*grab).touch) });
+unsafe extern "C" fn run_cancel<T: TouchGrab>(grab: *mut weston_touch_grab) {
+    let wrapper = &mut *wl_container_of!(((*grab).interface), TouchGrabWrapper<T>, base);
+    wrapper.user.cancel(TouchRef::from_ptr_mut((*grab).touch));
 }
 
 unsafe fn noop_destroy(_: *mut weston_touch) {}

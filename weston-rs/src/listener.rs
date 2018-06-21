@@ -8,10 +8,9 @@ pub struct WlListener<T: ForeignTypeRef> {
     pub wll: wl_listener,
 }
 
-#[allow(unused_unsafe)]
-extern "C" fn run_wl_listener<T: ForeignTypeRef>(listener: *mut wl_listener, data: *mut c_void) {
-    let wrapper = unsafe { &mut *wl_container_of!(listener, WlListener<T>, wll) };
-    (*wrapper.cb)(unsafe { T::from_ptr_mut(data as *mut T::CType) });
+unsafe extern "C" fn run_wl_listener<T: ForeignTypeRef>(listener: *mut wl_listener, data: *mut c_void) {
+    let wrapper = &mut *wl_container_of!(listener, WlListener<T>, wll);
+    (*wrapper.cb)(T::from_ptr_mut(data as *mut T::CType));
 }
 
 impl<T: ForeignTypeRef> WlListener<T> {

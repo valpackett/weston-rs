@@ -39,29 +39,29 @@ use ::head::HeadRef;
 /// Hold on to it if you want to later destroy the binding.
 pub struct Binding(*mut weston_binding);
 
-extern "C" fn run_key_binding<F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(keyboard: *mut weston_keyboard, time: *const libc::timespec, key: u32, data: *mut libc::c_void) {
-    let cb = unsafe { &mut *(data as *mut F) };
-    cb(unsafe { KeyboardRef::from_ptr_mut(keyboard) }, unsafe { &*time }, key);
+unsafe extern "C" fn run_key_binding<F: FnMut(&mut KeyboardRef, &libc::timespec, u32)>(keyboard: *mut weston_keyboard, time: *const libc::timespec, key: u32, data: *mut libc::c_void) {
+    let cb = &mut *(data as *mut F);
+    cb(KeyboardRef::from_ptr_mut(keyboard), &*time, key);
 }
 
-extern "C" fn run_modifier_binding<F: FnMut(&mut KeyboardRef, KeyboardModifier)>(keyboard: *mut weston_keyboard, modifier: weston_keyboard_modifier, data: *mut libc::c_void) {
-    let cb = unsafe { &mut *(data as *mut F) };
-    cb(unsafe { KeyboardRef::from_ptr_mut(keyboard) }, KeyboardModifier::from_bits_truncate(modifier));
+unsafe extern "C" fn run_modifier_binding<F: FnMut(&mut KeyboardRef, KeyboardModifier)>(keyboard: *mut weston_keyboard, modifier: weston_keyboard_modifier, data: *mut libc::c_void) {
+    let cb = &mut *(data as *mut F);
+    cb(KeyboardRef::from_ptr_mut(keyboard), KeyboardModifier::from_bits_truncate(modifier));
 }
 
-extern "C" fn run_button_binding<F: FnMut(&mut PointerRef, &libc::timespec, u32)>(pointer: *mut weston_pointer, time: *const libc::timespec, button: u32, data: *mut libc::c_void) {
-    let cb = unsafe { &mut *(data as *mut F) };
-    cb(unsafe { PointerRef::from_ptr_mut(pointer) }, unsafe { &*time }, button);
+unsafe extern "C" fn run_button_binding<F: FnMut(&mut PointerRef, &libc::timespec, u32)>(pointer: *mut weston_pointer, time: *const libc::timespec, button: u32, data: *mut libc::c_void) {
+    let cb = &mut *(data as *mut F);
+    cb(PointerRef::from_ptr_mut(pointer), &*time, button);
 }
 
-extern "C" fn run_touch_binding<F: FnMut(&mut TouchRef, &libc::timespec)>(touch: *mut weston_touch, time: *const libc::timespec, data: *mut libc::c_void) {
-    let cb = unsafe { &mut *(data as *mut F) };
-    cb(unsafe { TouchRef::from_ptr_mut(touch) }, unsafe { &*time });
+unsafe extern "C" fn run_touch_binding<F: FnMut(&mut TouchRef, &libc::timespec)>(touch: *mut weston_touch, time: *const libc::timespec, data: *mut libc::c_void) {
+    let cb = &mut *(data as *mut F);
+    cb(TouchRef::from_ptr_mut(touch), &*time);
 }
 
-extern "C" fn run_axis_binding<F: FnMut(&mut PointerRef, &libc::timespec, PointerAxisEvent)>(pointer: *mut weston_pointer, time: *const libc::timespec, event: *mut weston_pointer_axis_event , data: *mut libc::c_void) {
-    let cb = unsafe { &mut *(data as *mut F) };
-    cb(unsafe { PointerRef::from_ptr_mut(pointer) }, unsafe { &*time }, unsafe { &*event }.into());
+unsafe extern "C" fn run_axis_binding<F: FnMut(&mut PointerRef, &libc::timespec, PointerAxisEvent)>(pointer: *mut weston_pointer, time: *const libc::timespec, event: *mut weston_pointer_axis_event, data: *mut libc::c_void) {
+    let cb = &mut *(data as *mut F);
+    cb(PointerRef::from_ptr_mut(pointer), &*time, (&*event).into());
 }
 
 pub struct HeadIterator<'a> {
