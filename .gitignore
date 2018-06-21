@@ -1,3 +1,4 @@
 /target
 /libweston-sys/protos/*.h
 /libweston-sys/protos/*.c
+/Cargo.lock
