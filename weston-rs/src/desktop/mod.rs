@@ -18,14 +18,14 @@ pub use self::surface::DesktopSurfaceRef;
 pub struct Desktop<SC> {
     ptr: *mut weston_desktop,
     wapi: Box<weston_desktop_api>,
-    api: Box<Box<DesktopApi<SC>>>, // heard you like boxes :D
+    api: Box<Box<dyn DesktopApi<SC>>>, // heard you like boxes :D
     // but the outer one gets turned into a raw pointer and we get the inner one in callbacks
 }
 
 unsafe impl<SC> Sync for Desktop<SC> {}
 
 impl<SC> Desktop<SC> {
-    pub fn new(compositor: &CompositorRef, api: Box<DesktopApi<SC>>) -> Desktop<SC> {
+    pub fn new(compositor: &CompositorRef, api: Box<dyn DesktopApi<SC>>) -> Desktop<SC> {
         let wapi = self::api::make_weston_api::<SC>();
         let mut api = Box::new(api);
         Desktop {

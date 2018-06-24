@@ -164,35 +164,34 @@ pub use desktop::*;
 
 
 #[cfg(target_arch = "aarch64")]
-pub type va_list = libweston_sys::__va_list;
+pub type LogVarArgsList = libweston_sys::__va_list;
 
 #[cfg(not(target_arch = "aarch64"))]
-pub type va_list = *mut libweston_sys::__va_list_tag;
+pub type LogVarArgsList = *mut libweston_sys::__va_list_tag;
 
 #[macro_export]
 macro_rules! weston_logger {
     (fn $name:ident ($strarg:ident : &str) $b:block) => {
+        #[cfg(target_arch = "aarch64")]
         unsafe extern "C" fn $name(fmt: *const ::libc::c_char,
-                                   mut args: ::weston_rs::va_list) -> ::libc::c_int {
-            #[cfg(target_arch = "aarch64")]
-            {
-                let $strarg = ::weston_rs::vsprintf::vsprintf(fmt, &mut args as *mut _).unwrap();
-                $b;
-                0
-            }
-            #[cfg(not(target_arch = "aarch64"))]
-            {
-                let $strarg = ::weston_rs::vsprintf::vsprintf(fmt, args).unwrap();
-                $b;
-                0
-            }
+                                   mut args: ::weston_rs::LogVarArgsList) -> ::libc::c_int {
+            let $strarg = ::weston_rs::vsprintf::vsprintf(fmt, &mut args as *mut _).unwrap();
+            $b;
+            0
+        }
+        #[cfg(not(target_arch = "aarch64"))]
+        unsafe extern "C" fn $name(fmt: *const ::libc::c_char,
+                                   args: ::weston_rs::LogVarArgsList) -> ::libc::c_int {
+            let $strarg = ::weston_rs::vsprintf::vsprintf(fmt, args).unwrap();
+            $b;
+            0
         }
     }
 }
 
 pub fn log_set_handler(
-    logger: unsafe extern "C" fn(*const libc::c_char, va_list) -> libc::c_int,
-    logger_cont: unsafe extern "C" fn(*const libc::c_char, va_list) -> libc::c_int,
+    logger: unsafe extern "C" fn(*const libc::c_char, LogVarArgsList) -> libc::c_int,
+    logger_cont: unsafe extern "C" fn(*const libc::c_char, LogVarArgsList) -> libc::c_int,
     ) {
     unsafe {
         libweston_sys::weston_log_set_handler(Some(logger), Some(logger_cont));

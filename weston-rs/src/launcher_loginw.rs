@@ -43,7 +43,7 @@ impl Launcher for LoginwLauncher {
                 fd,
                 sources::FdInterest::READ,
                 |ev, _| {
-                    if let sources::FdEvent::Ready { fd, mask: _ } = ev {
+                    if let sources::FdEvent::Ready { fd, .. } = ev {
                         let mut lw_state = LW_STATE.write().expect("state .write()");
                         let (ref sock, ref mut compositor) = lw_state.get_mut(&fd).expect("state .get_mut()");
                         let mut sock = unsafe { Socket::from_raw_fd(sock.as_raw_fd()) }; // Arc can't be mutable
