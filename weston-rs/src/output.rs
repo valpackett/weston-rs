@@ -36,7 +36,7 @@ impl<'a> Iterator for HeadIterator<'a> {
 }
 
 impl OutputRef {
-    prop_accessors!(u32 | id);
+    prop_accessors!(u32 | id, transform);
     prop_accessors!(i32 | x, y, width, height, native_scale, current_scale, original_scale);
     prop_accessors!(libc::c_int | scale);
     prop_accessors!(f32 | extra_scale, current_extra_scale);
