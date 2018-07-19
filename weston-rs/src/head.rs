@@ -8,7 +8,10 @@ use libweston_sys::{
     weston_head_set_monitor_strings, weston_head_set_physical_size,
     weston_head_detach, weston_head_release,
 };
-use wayland_sys::server::wl_signal;
+use wayland_sys::{
+    server::wl_signal,
+    common::wl_list,
+};
 use foreign_types::ForeignTypeRef;
 use ::output::{Output, OutputRef};
 
@@ -30,6 +33,7 @@ impl HeadRef {
     prop_accessors!(u32 | subpixel);
     prop_accessors!(bool | connection_internal, device_changed, connected);
     prop_accessors!(ptr wl_signal | destroy_signal);
+    prop_accessors!(ptr wl_list | resource_list); // wl_output protocol objects
 
     pub fn set_monitor_strings(&mut self, make: &str, model: &str, serialno: &str) {
         let make = ffi::CString::new(make).expect("CString");
