@@ -78,6 +78,18 @@ impl HeadRef {
         unsafe { ffi::CStr::from_ptr(weston_head_get_name(self.as_ptr())) }
     }
 
+    pub fn get_make(&self) -> &ffi::CStr {
+        unsafe { ffi::CStr::from_ptr((*self.as_ptr()).make) }
+    }
+
+    pub fn get_model(&self) -> &ffi::CStr {
+        unsafe { ffi::CStr::from_ptr((*self.as_ptr()).model) }
+    }
+
+    pub fn get_serial_number(&self) -> &ffi::CStr {
+        unsafe { ffi::CStr::from_ptr((*self.as_ptr()).serial_number) }
+    }
+
     pub fn detach(&mut self) {
         unsafe { weston_head_detach(self.as_ptr()); }
     }
