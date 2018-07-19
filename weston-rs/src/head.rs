@@ -4,8 +4,11 @@ use libweston_sys::{
     weston_head_get_name, weston_head_get_output,
     weston_head_is_connected, weston_head_is_enabled,
     weston_head_is_device_changed, weston_head_reset_device_changed,
-    weston_head_detach,
+    weston_head_set_subpixel, weston_head_set_connection_status, weston_head_set_internal,
+    weston_head_set_monitor_strings, weston_head_set_physical_size,
+    weston_head_detach, weston_head_release,
 };
+use wayland_sys::server::wl_signal;
 use foreign_types::ForeignTypeRef;
 use ::output::{Output, OutputRef};
 
@@ -23,9 +26,32 @@ impl HeadRef {
                    output output_mut = |&this| { weston_head_get_output(this.as_ptr()) });
     obj_accessors!(opt Output |
                    output_owned = |&this| { weston_head_get_output(this.as_ptr()) });
+    prop_accessors!(i32 | mm_width, mm_height);
+    prop_accessors!(u32 | subpixel);
+    prop_accessors!(bool | connection_internal, device_changed, connected);
+    prop_accessors!(ptr wl_signal | destroy_signal);
 
-    pub fn get_name(&self) -> &ffi::CStr {
-        unsafe { ffi::CStr::from_ptr(weston_head_get_name(self.as_ptr())) }
+    pub fn set_monitor_strings(&mut self, make: &str, model: &str, serialno: &str) {
+        let make = ffi::CString::new(make).expect("CString");
+        let model = ffi::CString::new(model).expect("CString");
+        let serialno = ffi::CString::new(serialno).expect("CString");
+        unsafe { weston_head_set_monitor_strings(self.as_ptr(), make.as_ptr(), model.as_ptr(), serialno.as_ptr()); }
+    }
+
+    pub fn set_physical_size(&mut self, mm_width: i32, mm_height: i32) {
+        unsafe { weston_head_set_physical_size(self.as_ptr(), mm_width, mm_height); }
+    }
+
+    pub fn set_subpixel(&mut self, sp: u32) {
+        unsafe { weston_head_set_subpixel(self.as_ptr(), sp as _); }
+    }
+
+    pub fn set_connection_status(&mut self, connected: bool) {
+        unsafe { weston_head_set_connection_status(self.as_ptr(), connected); }
+    }
+
+    pub fn set_internal(&mut self) {
+        unsafe { weston_head_set_internal(self.as_ptr()); }
     }
 
     pub fn is_connected(&self) -> bool {
@@ -44,8 +70,16 @@ impl HeadRef {
         unsafe { weston_head_reset_device_changed(self.as_ptr()); }
     }
 
+    pub fn get_name(&self) -> &ffi::CStr {
+        unsafe { ffi::CStr::from_ptr(weston_head_get_name(self.as_ptr())) }
+    }
+
     pub fn detach(&mut self) {
         unsafe { weston_head_detach(self.as_ptr()); }
+    }
+
+    pub fn release(&mut self) {
+        unsafe { weston_head_release(self.as_ptr()); }
     }
 
 }

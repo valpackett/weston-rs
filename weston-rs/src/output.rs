@@ -4,7 +4,7 @@ use libweston_sys::{
     weston_output,
     weston_output_set_scale, weston_output_set_extra_scale, weston_output_set_transform,
     weston_output_enable, weston_output_disable, weston_output_destroy,
-    weston_output_iterate_heads, weston_head,
+    weston_output_iterate_heads, weston_output_attach_head, weston_head,
 };
 use wayland_sys::server::wl_signal;
 use foreign_types::ForeignTypeRef;
@@ -36,10 +36,11 @@ impl<'a> Iterator for HeadIterator<'a> {
 }
 
 impl OutputRef {
+    prop_accessors!(u32 | id);
     prop_accessors!(i32 | x, y, width, height, native_scale, current_scale, original_scale);
     prop_accessors!(libc::c_int | scale);
     prop_accessors!(f32 | extra_scale, current_extra_scale);
-    prop_accessors!(ptr wl_signal | frame_signal, destroy_signal);
+    prop_accessors!(ptr wl_signal | user_destroy_signal, frame_signal, destroy_signal);
 
     pub fn set_scale(&mut self, scale: libc::c_int) {
         unsafe { weston_output_set_scale(self.as_ptr(), scale); }
@@ -59,6 +60,10 @@ impl OutputRef {
 
     pub fn disable(&mut self) {
         unsafe { weston_output_disable(self.as_ptr()); }
+    }
+
+    pub fn attach_head(&mut self, head: &mut HeadRef) {
+        unsafe { weston_output_attach_head(self.as_ptr(), head.as_ptr()); }
     }
 
     pub fn iterate_heads(&mut self) -> HeadIterator {
